@@ -59,21 +59,20 @@ class AuthService {
       return demoEntry['user'] as User;
     }
 
-    final Box<Map<String, dynamic>> usersBox =
-        await LocalStorageService.usersBox();
-    final Map<String, dynamic>? storedData = usersBox.get(normalizedEmail);
+    final Box<Map> usersBox = await LocalStorageService.usersBox();
+    final Map? storedData = usersBox.get(normalizedEmail);
 
     if (storedData == null) {
       return null;
     }
 
-    if (storedData['password'] != password) {
+    final String? storedPassword = storedData['password'] as String?;
+    if (storedPassword != password) {
       return null;
     }
 
-    final userMap = Map<String, dynamic>.from(
-      storedData['user'] as Map<dynamic, dynamic>,
-    );
+    final Map<String, dynamic> userMap =
+        Map<String, dynamic>.from(storedData['user'] as Map);
 
     return User.fromMap(userMap);
   }
@@ -93,8 +92,7 @@ class AuthService {
       throw AuthException('Este email já está associado a uma conta demo.');
     }
 
-    final Box<Map<String, dynamic>> usersBox =
-        await LocalStorageService.usersBox();
+    final Box<Map> usersBox = await LocalStorageService.usersBox();
 
     if (usersBox.containsKey(normalizedEmail)) {
       throw AuthException('Este email já está registado.');

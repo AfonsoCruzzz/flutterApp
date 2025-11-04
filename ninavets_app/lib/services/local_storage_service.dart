@@ -4,7 +4,7 @@ class LocalStorageService {
   LocalStorageService._();
 
   static const String _usersBoxName = 'usersBox';
-  static Box<Map<String, dynamic>>? _usersBox;
+  static Box<Map>? _usersBox;
   static bool _hiveInitialized = false;
 
   static Future<void> init() async {
@@ -14,11 +14,11 @@ class LocalStorageService {
     }
 
     if (_usersBox == null || !_usersBox!.isOpen) {
-      _usersBox = await Hive.openBox<Map<String, dynamic>>(_usersBoxName);
+      _usersBox = await Hive.openBox<Map>(_usersBoxName);
     }
   }
 
-  static Future<Box<Map<String, dynamic>>> usersBox() async {
+  static Future<Box<Map>> usersBox() async {
     if (_usersBox == null || !_usersBox!.isOpen) {
       await init();
     }
