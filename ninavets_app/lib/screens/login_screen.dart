@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
+import 'home_screen.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -203,7 +204,12 @@ class _LoginScreenState extends State<LoginScreen> {
               // Link para Registar
               TextButton(
                 onPressed: () {
-                  // Futuramente: Navegar para ecrã de registo
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SignupScreen(),
+                    ),
+                  );
                 },
                 child: const Text(
                   'Não tem conta? Registe-se aqui',
