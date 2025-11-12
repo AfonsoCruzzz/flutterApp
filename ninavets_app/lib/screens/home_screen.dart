@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import '../models/user.dart';
+import 'pet_sitting_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final User user;
   
   const HomeScreen({super.key, required this.user});
+
+  // Cores
+  final Color primaryPurple = const Color(0xFF6A1B9A);
+  final Color primaryOrange = const Color(0xFFFF6B35);
+  final Color lightOrange = const Color(0xFFFFE8E0);
+  final Color lightPurple = const Color(0xFFF3E5F5);
 
   String _getWelcomeMessage() {
     switch (user.type) {
@@ -13,8 +20,8 @@ class HomeScreen extends StatelessWidget {
         return 'Bem-vindo, Doutor(a) ${user.name}';
       case UserType.student:
         return 'Bem-vindo, Estudante ${user.name}';
-      case UserType.client: // Corrigido
-        return 'Bem-vindo, Cliente ${user.name}';
+      case UserType.serviceProvider:
+        return 'Bem-vindo, Prestador ${user.name}';
       default:
         return 'Bem-vindo, ${user.name}';
     }
@@ -26,8 +33,8 @@ class HomeScreen extends StatelessWidget {
         return 'Veterinário';
       case UserType.student:
         return 'Estudante de Veterinária';
-      case UserType.client: // Corrigido
-        return 'Cliente';
+      case UserType.serviceProvider:
+        return 'Prestador de Serviços';
       default:
         return 'Cliente';
     }
@@ -37,12 +44,16 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NinaVets - Home'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        title: Text(
+          'NinaVets - Home',
+          style: TextStyle(color: primaryPurple),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: primaryPurple),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout, color: primaryPurple),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -59,6 +70,10 @@ class HomeScreen extends StatelessWidget {
           children: [
             // Informação do utilizador
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -66,9 +81,10 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       _getWelcomeMessage(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: primaryPurple,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -81,11 +97,12 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            const Text(
+            Text(
               'Serviços Disponíveis',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: primaryPurple,
               ),
             ),
             const SizedBox(height: 8),
@@ -106,36 +123,36 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 16,
                 children: [
                   _buildServiceCard(
-                    context, // ⬅️ PASSA O CONTEXT AQUI
+                    context,
                     'Veterinários',
                     Icons.medical_services,
-                    Colors.green,
+                    primaryPurple,
                   ),
                   _buildServiceCard(
-                    context, // ⬅️ PASSA O CONTEXT AQUI
+                    context,
                     'Passear',
                     Icons.directions_walk,
-                    Colors.orange,
+                    primaryOrange,
                   ),
                   _buildServiceCard(
-                    context, // ⬅️ PASSA O CONTEXT AQUI
+                    context,
                     'Pet Sitting',
                     Icons.home,
-                    Colors.purple,
+                    primaryPurple,
                   ),
                   if (user.type == UserType.veterinarian)
                     _buildServiceCard(
-                      context, // ⬅️ PASSA O CONTEXT AQUI
+                      context,
                       'Chamar Estudante',
                       Icons.school,
-                      Colors.blue,
+                      primaryOrange,
                     ),
                   if (user.type == UserType.student)
                     _buildServiceCard(
-                      context, // ⬅️ PASSA O CONTEXT AQUI
+                      context,
                       'Oportunidades',
                       Icons.work,
-                      Colors.blue,
+                      primaryPurple,
                     ),
                 ],
               ),
@@ -154,10 +171,19 @@ class HomeScreen extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          // Agora o context está disponível porque recebemos como parâmetro
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Clicou em: $title')),
-          );
+          if (title == 'Pet Sitting') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PetSittingScreen()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Clicou em: $title'),
+                backgroundColor: primaryOrange,
+              ),
+            );
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Column(
@@ -172,8 +198,9 @@ class HomeScreen extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
           ],

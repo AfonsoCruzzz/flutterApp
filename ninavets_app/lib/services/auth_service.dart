@@ -1,5 +1,4 @@
 import 'package:hive_flutter/hive_flutter.dart';
-
 import '../models/user.dart';
 import 'local_storage_service.dart';
 
@@ -50,70 +49,119 @@ class AuthService {
   };
 
   static Future<User?> login(String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    final normalizedEmail = email.trim().toLowerCase();
+      final normalizedEmail = email.trim().toLowerCase();
 
-    final demoEntry = _demoUsers[normalizedEmail];
-    if (demoEntry != null && demoEntry['password'] == password) {
-      return demoEntry['user'] as User;
-    }
+      // Verificar users de demonstração primeiro
+      final demoEntry = _demoUsers[normalizedEmail];
+      if (demoEntry != null && demoEntry['password'] == password) {
+        return demoEntry['user'] as User;
+      }
 
-    final Box<Map> usersBox = await LocalStorageService.usersBox();
-    final Map? storedData = usersBox.get(normalizedEmail);
+      // Verificar na base de dados local
+      final Box<Map> usersBox = await LocalStorageService.usersBox();
+      final Map? storedData = usersBox.get(normalizedEmail);
 
-    if (storedData == null) {
+      if (storedData == null) {
+        return null;
+      }
+
+      final String? storedPassword = storedData['password'] as String?;
+      if (storedPassword != password) {
+        return null;
+      }
+
+      final Map<String, dynamic> userMap =
+          Map<String, dynamic>.from(storedData['user'] as Map);
+
+      return User.fromMap(userMap);
+    } catch (e) {
+      print('Erro no login: $e');
       return null;
     }
-
-    final String? storedPassword = storedData['password'] as String?;
-    if (storedPassword != password) {
-      return null;
-    }
-
-    final Map<String, dynamic> userMap =
-        Map<String, dynamic>.from(storedData['user'] as Map);
-
-    return User.fromMap(userMap);
   }
 
-  static Future<User> register(
+  static Future<User?> register(
     String email,
     String password,
     String name,
     UserType type,
     String? phone,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    final normalizedEmail = email.trim().toLowerCase();
+      final normalizedEmail = email.trim().toLowerCase();
 
-    if (_demoUsers.containsKey(normalizedEmail)) {
-      throw AuthException('Este email já está associado a uma conta demo.');
+      // Validar email
+      if (normalizedEmail.isEmpty) {
+        throw AuthException('Por favor, insira um email válido.');
+      }
+
+      // Validar password
+      if (password.length < 6) {
+        throw AuthException('A password deve ter pelo menos 6 caracteres.');
+      }
+
+      // Verificar se é um email de demonstração
+      if (_demoUsers.containsKey(normalizedEmail)) {
+        throw AuthException('Este email já está associado a uma conta demo.');
+      }
+
+      final Box<Map> usersBox = await LocalStorageService.usersBox();
+
+      // Verificar se email já existe na base de dados
+      if (usersBox.containsKey(normalizedEmail)) {
+        throw AuthException('Este email já está registado.');
+      }
+
+      // Criar novo user
+      final user = User(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        email: normalizedEmail,
+        name: name.trim(),
+        type: type,
+        phone: phone?.trim(),
+        createdAt: DateTime.now(),
+      );
+
+      // Preparar dados para guardar
+      final Map<String, dynamic> dataToStore = {
+        'user': user.toMap(),
+        'password': password,
+        'created_at': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      // Guardar na base de dados
+      await usersBox.put(normalizedEmail, dataToStore);
+
+      print('User registado com sucesso: ${user.email}');
+      return user;
+    } on AuthException catch (e) {
+      print('AuthException no registo: ${e.message}');
+      rethrow; // Re-lançar a exceção para ser capturada no UI
+    } catch (e) {
+      print('Erro inesperado no registo: $e');
+      throw AuthException('Erro ao criar conta. Tente novamente.');
     }
+  }
 
-    final Box<Map> usersBox = await LocalStorageService.usersBox();
+  // Método auxiliar para verificar se um email já existe
+  static Future<bool> emailExists(String email) async {
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
+      
+      if (_demoUsers.containsKey(normalizedEmail)) {
+        return true;
+      }
 
-    if (usersBox.containsKey(normalizedEmail)) {
-      throw AuthException('Este email já está registado.');
+      final Box<Map> usersBox = await LocalStorageService.usersBox();
+      return usersBox.containsKey(normalizedEmail);
+    } catch (e) {
+      print('Erro ao verificar email: $e');
+      return false;
     }
-
-    final user = User(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      email: normalizedEmail,
-      name: name,
-      type: type,
-      phone: phone,
-      createdAt: DateTime.now(),
-    );
-
-    final Map<String, dynamic> dataToStore = {
-      'user': user.toMap(),
-      'password': password,
-    };
-
-    await usersBox.put(normalizedEmail, dataToStore);
-
-    return user;
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'screens/login_screen.dart';
 import 'services/local_storage_service.dart';
 
@@ -16,11 +15,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NinaVets',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+     theme: ThemeData(
+        primaryColor: const Color(0xFF6A1B9A), // Roxo
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: Colors.purple,
+          accentColor: const Color(0xFFFF6B35), // Laranja
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const LoginScreen(), // Tela inicial é o Login
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

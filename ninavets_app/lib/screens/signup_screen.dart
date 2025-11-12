@@ -24,6 +24,12 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
 
+  // Cores
+  final Color primaryPurple = const Color(0xFF6A1B9A);
+  final Color primaryOrange = const Color(0xFFFF6B35);
+  final Color lightOrange = const Color(0xFFFFE8E0);
+  final Color lightPurple = const Color(0xFFF3E5F5);
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -65,19 +71,24 @@ class _SignupScreenState extends State<SignupScreen> {
         _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
       );
 
-      if (mounted) {
+      if (user != null && mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen(user: user)),
         );
+      } else {
+        setState(() {
+          _errorMessage = 'Erro ao criar conta. Tente novamente.';
+        });
       }
     } on AuthException catch (e) {
       setState(() {
         _errorMessage = e.message;
       });
-    } catch (_) {
+    } catch (e) {
+      print('Erro inesperado: $e');
       setState(() {
-        _errorMessage = 'Ocorreu um erro ao criar a conta.';
+        _errorMessage = 'Ocorreu um erro inesperado. Tente novamente.';
       });
     } finally {
       if (mounted) {
@@ -112,19 +123,21 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 60),
-              const Icon(
+              const SizedBox(height: 40),
+              // Ícone em roxo
+              Icon(
                 Icons.pets,
                 size: 80,
-                color: Colors.blue,
+                color: primaryPurple,
               ),
               const SizedBox(height: 20),
-              const Text(
+              // Título em roxo
+              Text(
                 'Criar conta',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: primaryPurple,
                 ),
               ),
               const SizedBox(height: 8),
@@ -136,56 +149,82 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+
+              // Mensagem de erro com tema laranja
               if (_errorMessage.isNotEmpty)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red[50],
+                    color: lightOrange,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red),
+                    border: Border.all(color: primaryOrange),
                   ),
                   child: Text(
                     _errorMessage,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: primaryOrange),
                   ),
                 ),
               if (_errorMessage.isNotEmpty) const SizedBox(height: 16),
+
+              // Campo Nome
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: 'Nome',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.person),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.person, color: primaryPurple),
                 ),
                 validator: Validators.validateName,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 16),
+
+              // Campo Email
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.email),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.email, color: primaryPurple),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.validateEmail,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 16),
+
+              // Dropdown Tipo de Utilizador
               DropdownButtonFormField<UserType>(
-                initialValue: _selectedType,
+                value: _selectedType,
                 decoration: InputDecoration(
                   labelText: 'Tipo de utilizador',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.badge),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.badge, color: primaryPurple),
                 ),
                 items: UserType.values
                     .map(
@@ -204,57 +243,87 @@ class _SignupScreenState extends State<SignupScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
+              // Campo Telefone
               TextFormField(
                 controller: _phoneController,
                 decoration: InputDecoration(
                   labelText: 'Telefone (opcional)',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.phone),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.phone, color: primaryPurple),
                 ),
                 keyboardType: TextInputType.phone,
                 validator: Validators.validatePhone,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 16),
+
+              // Campo Password
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.lock),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.lock, color: primaryPurple),
                 ),
                 validator: Validators.validatePassword,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 16),
+
+              // Campo Confirmar Password
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Confirmar Password',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.lock_outline, color: primaryPurple),
                 ),
                 validator: _validateConfirmPassword,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 24),
+
+              // Botão Criar Conta em Laranja
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(primaryOrange),
+                        ),
+                      )
                     : ElevatedButton(
                         onPressed: _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: primaryOrange,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -266,17 +335,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
               ),
               const SizedBox(height: 16),
+
+              // Link para Login em Roxo
               TextButton(
                 onPressed: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.pushReplacementNamed(context, '/');
-                  }
+                  Navigator.pop(context);
                 },
-                child: const Text(
+                child: Text(
                   'Já tem conta? Faça login',
-                  style: TextStyle(color: Colors.blue),
+                  style: TextStyle(color: primaryPurple),
                 ),
               ),
               const SizedBox(height: 24),

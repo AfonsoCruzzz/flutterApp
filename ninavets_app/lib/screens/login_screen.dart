@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
-import 'home_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +18,11 @@ class _LoginScreenState extends State<LoginScreen> {
   
   bool _isLoading = false;
   String _errorMessage = '';
+
+  // Cores
+  final Color primaryPurple = const Color(0xFF6A1B9A);
+  final Color primaryOrange = const Color(0xFFFF6B35);
+  final Color lightOrange = const Color(0xFFFFE8E0);
 
   @override
   void dispose() {
@@ -43,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (user != null && mounted) {
-        // Login bem-sucedido - navega para Home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -79,21 +83,21 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo/Ícone
-              const Icon(
+              // Logo/Ícone - Agora em roxo
+              Icon(
                 Icons.pets,
                 size: 80,
-                color: Colors.blue,
+                color: primaryPurple,
               ),
               const SizedBox(height: 20),
               
-              // Título
-              const Text(
+              // Título em roxo
+              Text(
                 'NinaVets',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: primaryPurple,
                 ),
               ),
               const SizedBox(height: 8),
@@ -112,13 +116,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red[50],
+                    color: lightOrange,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red),
+                    border: Border.all(color: primaryOrange),
                   ),
                   child: Text(
                     _errorMessage,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: primaryOrange),
                   ),
                 ),
               
@@ -129,10 +133,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.email),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.email, color: primaryPurple),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.validateEmail,
@@ -146,26 +156,36 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
+                  labelStyle: TextStyle(color: primaryPurple),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple),
                   ),
-                  prefixIcon: const Icon(Icons.lock),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryPurple, width: 2),
+                  ),
+                  prefixIcon: Icon(Icons.lock, color: primaryPurple),
                 ),
                 validator: Validators.validatePassword,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 24),
               
-              // Botão Login
+              // Botão Login em laranja
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(primaryOrange),
+                        ),
+                      )
                     : ElevatedButton(
                         onPressed: _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: primaryOrange,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -182,17 +202,20 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: lightOrange,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Contas de demonstração:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: primaryPurple,
+                      ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text('vet@ninavets.pt / 123456'),
                     Text('student@ninavets.pt / 123456'),
                     Text('client@ninavets.pt / 123456'),
@@ -201,19 +224,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               
-              // Link para Registar
+              // Link para Registar em roxo
               TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const SignupScreen(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const SignupScreen()),
                   );
                 },
-                child: const Text(
+                child: Text(
                   'Não tem conta? Registe-se aqui',
-                  style: TextStyle(color: Colors.blue),
+                  style: TextStyle(color: primaryPurple),
                 ),
               ),
             ],
