@@ -71,8 +71,9 @@ class AuthService {
       return null;
     }
 
-    final Map<String, dynamic> userMap =
-        Map<String, dynamic>.from(storedData['user'] as Map);
+    final Map<String, dynamic> userMap = Map<String, dynamic>.from(
+      storedData['user'] as Map,
+    );
 
     return User.fromMap(userMap);
   }
@@ -115,5 +116,39 @@ class AuthService {
     await usersBox.put(normalizedEmail, dataToStore);
 
     return user;
+  }
+
+  static Future<List<User>> fetchVeterinarians() {
+    return _fetchUsersByType(UserType.veterinarian);
+  }
+
+  static Future<List<User>> fetchServiceProviders() {
+    return _fetchUsersByType(UserType.serviceProvider);
+  }
+
+  static Future<List<User>> _fetchUsersByType(UserType type) async {
+    final List<User> results = [];
+
+    // Include demo users so the list is never empty during demos
+    for (final entry in _demoUsers.values) {
+      final User demoUser = entry['user'] as User;
+      if (demoUser.type == type) {
+        results.add(demoUser);
+      }
+    }
+
+    final Box<Map> usersBox = await LocalStorageService.usersBox();
+
+    for (final Map data in usersBox.values) {
+      final dynamic userData = data['user'];
+      if (userData is Map) {
+        final user = User.fromMap(Map<String, dynamic>.from(userData));
+        if (user.type == type) {
+          results.add(user);
+        }
+      }
+    }
+
+    return results;
   }
 }

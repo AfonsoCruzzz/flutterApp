@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import '../models/user.dart';
+import 'service_providers_screen.dart';
+import 'veterinarians_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final User user;
-  
+
   const HomeScreen({super.key, required this.user});
 
   String _getWelcomeMessage() {
@@ -80,24 +82,18 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             const Text(
               'Serviços Disponíveis',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
               'Selecione o serviço que precisa',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 20),
-            
+
             // Cards de Serviços
             Expanded(
               child: GridView.count(
@@ -106,16 +102,32 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 16,
                 children: [
                   _buildServiceCard(
-                    context, // ⬅️ PASSA O CONTEXT AQUI
+                    context,
                     'Veterinários',
                     Icons.medical_services,
                     Colors.green,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const VeterinariansScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildServiceCard(
-                    context, // ⬅️ PASSA O CONTEXT AQUI
+                    context,
                     'Passear',
                     Icons.directions_walk,
                     Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ServiceProvidersScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildServiceCard(
                     context, // ⬅️ PASSA O CONTEXT AQUI
@@ -146,35 +158,36 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceCard(BuildContext context, String title, IconData icon, Color color) {
+  Widget _buildServiceCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          // Agora o context está disponível porque recebemos como parâmetro
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Clicou em: $title')),
-          );
+          if (onTap != null) {
+            onTap();
+          } else {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Clicou em: $title')));
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 40,
-              color: color,
-            ),
+            Icon(icon, size: 40, color: color),
             const SizedBox(height: 8),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
