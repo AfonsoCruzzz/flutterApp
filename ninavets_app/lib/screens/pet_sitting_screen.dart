@@ -328,7 +328,7 @@ class _PetSittingScreenState extends State<PetSittingScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'R\$${sitter['price']}/dia',
+                  '€${sitter['price']}/dia',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

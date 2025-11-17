@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import '../models/user.dart';
 import 'pet_sitting_screen.dart';
+import 'veterinarians_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final User user;
@@ -175,6 +176,11 @@ class HomeScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const PetSittingScreen()),
+            );
+          } else if (title == 'Veterinários') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const VeterinariansScreen()),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
