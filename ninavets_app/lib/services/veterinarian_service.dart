@@ -41,10 +41,10 @@ class VeterinarianService {
       // Ordenar por rating (mais alto primeiro)
       veterinarians.sort((a, b) => b.rating.average.compareTo(a.rating.average));
       
-      print('✅ ${veterinarians.length} veterinários carregados');
+      print(' ${veterinarians.length} veterinários carregados');
       return veterinarians;
     } catch (e) {
-      print('❌ Erro ao carregar veterinários: $e');
+      print(' Erro ao carregar veterinários: $e');
       return [];
     }
   }
@@ -67,7 +67,7 @@ class VeterinarianService {
       }
       return null;
     } catch (e) {
-      print('❌ Erro ao buscar veterinário por ID: $e');
+      print(' Erro ao buscar veterinário por ID: $e');
       return null;
     }
   }
@@ -89,9 +89,9 @@ class VeterinarianService {
     try {
       final vetBox = await LocalStorageService.veterinariansBox();
       await vetBox.put(veterinarian.id, veterinarian.toMap());
-      print('✅ Veterinário ${veterinarian.name} criado com sucesso');
+      print(' Veterinário ${veterinarian.name} criado com sucesso');
     } catch (e) {
-      print('❌ Erro ao criar veterinário: $e');
+      print(' Erro ao criar veterinário: $e');
       rethrow;
     }
   }

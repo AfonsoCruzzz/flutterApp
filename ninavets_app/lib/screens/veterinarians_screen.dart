@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import './veterinarians_filter_screen.dart';
 import '../models/animal.dart';
 import '../models/veterinarian.dart';
 import '../services/animal_service.dart';
 import '../services/veterinarian_service.dart';
 import '../widgets/veterinarian_card.dart';
-import '../widgets/filter_section.dart';
 
 class VeterinariansScreen extends StatefulWidget {
   const VeterinariansScreen({super.key});
@@ -30,6 +30,10 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
   
   Animal? _selectedAnimal;
   bool _isLoading = true;
+
+  // Cores
+  final Color primaryPurple = const Color(0xFF6A1B9A);
+  final Color primaryOrange = const Color(0xFFFF6B35);
 
   @override
   void initState() {
@@ -58,21 +62,33 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
     }
   }
 
+  Future<void> _openFilterScreen() async {
+    final Map<String, dynamic>? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VeterinariansFilterScreen(
+          initialFilters: _activeFilters,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _activeFilters = result;
+      });
+      _applyFilters();
+    }
+  }
+
   void _applyFilters() {
     List<Veterinarian> filtered = _allVeterinarians;
-
-    // Filtrar por espécie (se na aba "Para o meu animal")
-    if (_tabController.index == 0 && _selectedAnimal != null) {
-      filtered = filtered.where((vet) => 
-          vet.species.contains(_selectedAnimal!.species)).toList();
-    }
 
     // Converter explicitamente para List<String> antes de usar
     final List<String> selectedSpecies = List<String>.from(_activeFilters['species'] ?? []);
     final List<String> selectedSpecialties = List<String>.from(_activeFilters['specialties'] ?? []);
     final List<String> selectedServices = List<String>.from(_activeFilters['services'] ?? []);
 
-    // Filtrar por espécies selecionadas (aba "Necessidade específica")
+    // Filtrar por espécies selecionadas
     if (selectedSpecies.isNotEmpty) {
       filtered = filtered.where((vet) => 
           selectedSpecies.any((species) => vet.species.contains(species))).toList();
@@ -114,18 +130,46 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
-  void _updateFilters(Map<String, dynamic> newFilters) {
-    setState(() {
-      _activeFilters = newFilters;
-    });
-    _applyFilters();
-  }
-
   void _onAnimalSelected(Animal? animal) {
     setState(() {
       _selectedAnimal = animal;
     });
-    _applyFilters();
+  }
+
+  bool _hasActiveFilters() {
+    return (_activeFilters['species'] as List).isNotEmpty ||
+        (_activeFilters['specialties'] as List).isNotEmpty ||
+        (_activeFilters['services'] as List).isNotEmpty ||
+        _activeFilters['location']['postalCode'].isNotEmpty ||
+        _activeFilters['location']['distance'] != 25 ||
+        _activeFilters['availability']['openNow'] ||
+        _activeFilters['availability']['emergency24h'];
+  }
+
+  String _getActiveFiltersSummary() {
+    List<String> active = [];
+    if ((_activeFilters['species'] as List).isNotEmpty) {
+      active.add('Espécies: ${(_activeFilters['species'] as List).join(', ')}');
+    }
+    if ((_activeFilters['specialties'] as List).isNotEmpty) {
+      active.add('Especialidades: ${(_activeFilters['specialties'] as List).join(', ')}');
+    }
+    if ((_activeFilters['services'] as List).isNotEmpty) {
+      active.add('Serviços: ${(_activeFilters['services'] as List).join(', ')}');
+    }
+    if (_activeFilters['location']['postalCode'].isNotEmpty) {
+      active.add('Código Postal: ${_activeFilters['location']['postalCode']}');
+    }
+    if (_activeFilters['location']['distance'] != 25) {
+      active.add('Raio: ${_activeFilters['location']['distance']} km');
+    }
+    if (_activeFilters['availability']['openNow']) {
+      active.add('Aberto agora');
+    }
+    if (_activeFilters['availability']['emergency24h']) {
+      active.add('Urgências 24h');
+    }
+    return 'Filtros: ${active.join(' • ')}';
   }
 
   @override
@@ -134,20 +178,20 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
       appBar: AppBar(
         title: const Text('Chamar Veterinário'),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF6A1B9A),
+        foregroundColor: primaryPurple,
         elevation: 0,
+        iconTheme: IconThemeData(color: primaryPurple),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF6A1B9A),
+          labelColor: primaryPurple,
           unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFFFF6B35),
+          indicatorColor: primaryOrange,
           tabs: const [
-            Tab(text: 'Para o meu animal'),
-            Tab(text: 'Para uma necessidade específica'),
+            Tab(text: 'Para uma necessidade específica'), // ABA ESQUERDA
+            Tab(text: 'Para o meu animal'), // ABA DIREITA
           ],
           onTap: (index) {
             setState(() {});
-            _applyFilters();
           },
         ),
       ),
@@ -156,24 +200,79 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
           : TabBarView(
               controller: _tabController,
               children: [
-                _buildForMyAnimalTab(),
+                // ABA 1: Para uma necessidade específica (COM LISTA DE VETERINÁRIOS)
                 _buildForSpecificNeedTab(),
+                // ABA 2: Para o meu animal (SEM LISTA DE VETERINÁRIOS)
+                _buildForMyAnimalTab(),
               ],
             ),
     );
   }
 
-  Widget _buildForMyAnimalTab() {
+  Widget _buildForSpecificNeedTab() {
     return Column(
       children: [
-        // Seção de seleção de animal
+        // Cabeçalho com botão de filtro
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: _userAnimals.isEmpty
-              ? _buildAddAnimalButton()
-              : _buildAnimalDropdown(),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_filteredVeterinarians.length} veterinários encontrados',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: primaryPurple,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _openFilterScreen,
+                icon: const Icon(Icons.filter_list),
+                color: primaryPurple,
+              ),
+            ],
+          ),
         ),
-        // Lista de veterinários
+        // Mostrar resumo dos filtros ativos
+        if (_hasActiveFilters())
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.grey[50],
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _getActiveFiltersSummary(),
+                    style: TextStyle(
+                      color: primaryPurple,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _activeFilters = {
+                        'species': <String>[],
+                        'specialties': <String>[],
+                        'services': <String>[],
+                        'location': {'postalCode': '', 'distance': 25},
+                        'availability': {'openNow': false, 'emergency24h': false},
+                      };
+                    });
+                    _applyFilters();
+                  },
+                  child: Text(
+                    'Limpar',
+                    style: TextStyle(color: primaryOrange),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Lista de resultados
         Expanded(
           child: _filteredVeterinarians.isEmpty
               ? _buildEmptyState()
@@ -193,105 +292,213 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
     );
   }
 
-  Widget _buildForSpecificNeedTab() {
-    return Column(
-      children: [
-        // Filtros (sempre visíveis no topo em mobile)
-        if (MediaQuery.of(context).size.width <= 600)
-          Container(
-            height: MediaQuery.of(context).size.height * 0.6, // 60% da altura
-            child: FilterSection(
-              filters: _activeFilters,
-              onFiltersChanged: _updateFilters,
-            ),
-          ),
-        
-        // Conteúdo principal
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sidebar com filtros (apenas em desktop)
-              if (MediaQuery.of(context).size.width > 600)
-                Container(
-                  width: 320, // Largura fixa para sidebar
-                  child: FilterSection(
-                    filters: _activeFilters,
-                    onFiltersChanged: _updateFilters,
-                  ),
-                ),
-              
-              // Lista de resultados
-              Expanded(
-                child: _filteredVeterinarians.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        itemCount: _filteredVeterinarians.length,
-                        itemBuilder: (context, index) {
-                          return VeterinarianCard(
-                            veterinarian: _filteredVeterinarians[index],
-                            onCall: () => _onCallVeterinarian(_filteredVeterinarians[index]),
-                            onChat: () => _onChatVeterinarian(_filteredVeterinarians[index]),
-                            onBook: () => _onBookAppointment(_filteredVeterinarians[index]),
-                          );
-                        },
-                      ),
+  Widget _buildForMyAnimalTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_userAnimals.isNotEmpty) ...[
+            // Se o utilizador tem animais, mostrar dropdown
+            const Text(
+              'Selecione o seu animal:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF6A1B9A),
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF6A1B9A), width: 1),
+              ),
+              child: DropdownButton<Animal>(
+                value: _selectedAnimal,
+                isExpanded: true,
+                underline: const SizedBox(), // Remove a linha padrão
+                hint: const Text('Selecione um animal'),
+                items: _userAnimals.map((Animal animal) {
+                  return DropdownMenuItem<Animal>(
+                    value: animal,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.pets, color: Color(0xFF6A1B9A)),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                animal.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${animal.species} • ${animal.breed.isNotEmpty ? animal.breed : "Raça não especificada"}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: _onAnimalSelected,
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Mostrar informações do animal selecionado
+            if (_selectedAnimal != null) _buildAnimalInfoCard(),
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 24),
+          ],
+          // Card para adicionar novo animal (sempre visível)
+          _buildAddAnimalCard(),
+        ],
+      ),
     );
   }
 
-  Widget _buildAnimalDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Selecione o seu animal:',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF6A1B9A),
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<Animal>(
-          value: _selectedAnimal,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildAnimalInfoCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.pets, color: Color(0xFF6A1B9A), size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  _selectedAnimal!.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6A1B9A),
+                  ),
+                ),
+              ],
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          items: _userAnimals.map((Animal animal) {
-            return DropdownMenuItem<Animal>(
-              value: animal,
-              child: Row(
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Espécie',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      Text(
+                        _selectedAnimal!.species,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Idade',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      Text(
+                        _selectedAnimal!.ageInYears != null 
+                            ? '${_selectedAnimal!.ageInYears} anos' 
+                            : 'Não especificada',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_selectedAnimal!.medicalConditions.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.pets, color: Color(0xFF6A1B9A)),
-                  const SizedBox(width: 8),
-                  Text(animal.name),
-                  const SizedBox(width: 8),
+                  const Text(
+                    'Condições médicas:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
-                    '(${animal.species})',
-                    style: const TextStyle(color: Colors.grey),
+                    _selectedAnimal!.medicalConditions.join(', '),
+                    style: const TextStyle(fontSize: 14),
                   ),
                 ],
               ),
-            );
-          }).toList(),
-          onChanged: _onAnimalSelected,
+            const SizedBox(height: 16),
+            // Botão para encontrar veterinários especializados
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // TODO: Implementar navegação para lista de veterinários especializados
+                  print('Buscar veterinários para ${_selectedAnimal!.species}');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6B35),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Encontrar veterinários especializados',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildAddAnimalButton() {
+  Widget _buildAddAnimalCard() {
     return Card(
       elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             const Icon(
@@ -301,35 +508,51 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
             ),
             const SizedBox(height: 16),
             const Text(
-              'Nenhum animal encontrado',
+              'Gerir os seus animais',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF6A1B9A),
               ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Adicione o perfil do seu animal para encontrar veterinários especializados',
+              'Adicione o perfil completo do seu animal para obter recomendações personalizadas de veterinários',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Navegar para ecrã de adicionar animal
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => AddAnimalScreen()));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // TODO: Navegar para adicionar animal
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6A1B9A),
+                      side: const BorderSide(color: Color(0xFF6A1B9A)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Adicionar Animal'),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Adicionar Animal',
-                style: TextStyle(color: Colors.white),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Navegar para gerir animais
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.list),
+                    label: const Text('Ver Todos'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -363,22 +586,11 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _activeFilters = {
-                  'species': [],
-                  'specialties': [],
-                  'services': [],
-                  'location': {'postalCode': '', 'distance': 25},
-                  'availability': {'openNow': false, 'emergency24h': false},
-                };
-              });
-              _applyFilters();
-            },
+            onPressed: _openFilterScreen,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6A1B9A),
+              backgroundColor: primaryPurple,
             ),
-            child: const Text('Limpar Filtros'),
+            child: const Text('Abrir Filtros'),
           ),
         ],
       ),
@@ -386,17 +598,14 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
   }
 
   void _onCallVeterinarian(Veterinarian vet) {
-    // TODO: Implementar chamada telefónica
     print('A chamar: ${vet.phone}');
   }
 
   void _onChatVeterinarian(Veterinarian vet) {
-    // TODO: Implementar chat
     print('Iniciar chat com: ${vet.name}');
   }
 
   void _onBookAppointment(Veterinarian vet) {
-    // TODO: Implementar marcação de consulta
     print('Marcar consulta com: ${vet.name}');
   }
 }

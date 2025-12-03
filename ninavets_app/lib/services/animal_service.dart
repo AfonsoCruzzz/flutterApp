@@ -22,9 +22,9 @@ class AnimalService {
     try {
       final animalBox = await LocalStorageService.animalsBox();
       await animalBox.put(animal.id, animal.toMap());
-      print('✅ Animal ${animal.name} criado com sucesso');
+      print('Animal ${animal.name} criado com sucesso');
     } catch (e) {
-      print('❌ Erro ao criar animal: $e');
+      print('Erro ao criar animal: $e');
       rethrow;
     }
   }
@@ -56,10 +56,10 @@ class AnimalService {
       // Ordenar por data de criação (mais recente primeiro)
       animals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
-      print('✅ ${animals.length} animais carregados para o dono $ownerId');
+      print('${animals.length} animais carregados para o dono $ownerId');
       return animals;
     } catch (e) {
-      print('❌ Erro ao carregar animais: $e');
+      print('Erro ao carregar animais: $e');
       return [];
     }
   }
@@ -83,7 +83,7 @@ class AnimalService {
       }
       return null;
     } catch (e) {
-      print('❌ Erro ao buscar animal por ID: $e');
+      print('Erro ao buscar animal por ID: $e');
       return null;
     }
   }
@@ -93,9 +93,9 @@ class AnimalService {
     try {
       final animalBox = await LocalStorageService.animalsBox();
       await animalBox.put(animal.id, animal.toMap());
-      print('✅ Animal ${animal.name} atualizado com sucesso');
+      print('Animal ${animal.name} atualizado com sucesso');
     } catch (e) {
-      print('❌ Erro ao atualizar animal: $e');
+      print('Erro ao atualizar animal: $e');
       rethrow;
     }
   }
@@ -105,9 +105,9 @@ class AnimalService {
     try {
       final animalBox = await LocalStorageService.animalsBox();
       await animalBox.delete(id);
-      print('✅ Animal $id eliminado com sucesso');
+      print('Animal $id eliminado com sucesso');
     } catch (e) {
-      print('❌ Erro ao eliminar animal: $e');
+      print('Erro ao eliminar animal: $e');
       rethrow;
     }
   }

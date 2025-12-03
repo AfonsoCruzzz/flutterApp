@@ -23,14 +23,7 @@ class _FilterSectionState extends State<FilterSection> {
   @override
   void initState() {
     super.initState();
-    // Inicializar com tipos explícitos
-    _localFilters = {
-      'species': List<String>.from(widget.filters['species'] ?? <String>[]),
-      'specialties': List<String>.from(widget.filters['specialties'] ?? <String>[]),
-      'services': List<String>.from(widget.filters['services'] ?? <String>[]),
-      'location': Map<String, dynamic>.from(widget.filters['location'] ?? {}),
-      'availability': Map<String, dynamic>.from(widget.filters['availability'] ?? {}),
-    };
+    _localFilters = Map<String, dynamic>.from(widget.filters);
   }
 
   void _updateFilter(String key, dynamic value) {
@@ -49,129 +42,54 @@ class _FilterSectionState extends State<FilterSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[50],
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8, // Limitar a 80% da altura
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // IMPORTANTE: evitar expandir indefinidamente
-            children: [
-              const Text(
-                'Filtrar por:',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A1B9A),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 1. FILTRO DE ESPÉCIE
-              SpeciesFilter(
-                selectedSpecies: List<String>.from(_localFilters['species'] ?? <String>[]),
-                onSpeciesChanged: (species) => _updateFilter('species', species),
-              ),
-              const SizedBox(height: 16),
-
-              // 2. FILTRO DE ESPECIALIDADE  
-              SpecialtyFilter(
-                selectedSpecialties: List<String>.from(_localFilters['specialties'] ?? <String>[]),
-                onSpecialtiesChanged: (specialties) => _updateFilter('specialties', specialties),
-              ),
-              const SizedBox(height: 16),
-
-              // 3. FILTRO DE SERVIÇOS
-              _buildServicesFilter(),
-              const SizedBox(height: 16),
-
-              // 4. FILTRO DE LOCALIZAÇÃO
-              _buildLocationFilter(),
-              const SizedBox(height: 16),
-
-              // 5. FILTRO DE DISPONIBILIDADE
-              AvailabilityFilter(
-                availability: Map<String, dynamic>.from(_localFilters['availability'] ?? {}),
-                onAvailabilityChanged: (availability) => _updateFilter('availability', availability),
-              ),
-              const SizedBox(height: 24),
-
-              // BOTÃO LIMPAR FILTROS - SEMPRE VISÍVEL
-              _buildActionButtons(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Container(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _localFilters = {
-                    'species': <String>[],
-                    'specialties': <String>[],
-                    'services': <String>[],
-                    'location': {'postalCode': '', 'distance': 25},
-                    'availability': {'openNow': false, 'emergency24h': false},
-                  };
-                });
-                widget.onFiltersChanged(_localFilters);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF6A1B9A),
-                side: const BorderSide(color: Color(0xFF6A1B9A)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text('Limpar Filtros'),
+          const Text(
+            'Filtrar por:',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF6A1B9A),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                // Os filtros já são aplicados automaticamente, mas podemos
-                // adicionar uma confirmação extra se necessário
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Filtros aplicados'),
-                    backgroundColor: Color(0xFFFF6B35),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text('Aplicar'),
-            ),
+          const SizedBox(height: 24),
+
+          // 1. FILTRO DE ESPÉCIE
+          SpeciesFilter(
+            selectedSpecies: List<String>.from(_localFilters['species'] ?? <String>[]),
+            onSpeciesChanged: (species) => _updateFilter('species', species),
+          ),
+          const SizedBox(height: 24),
+
+          // 2. FILTRO DE ESPECIALIDADE  
+          SpecialtyFilter(
+            selectedSpecialties: List<String>.from(_localFilters['specialties'] ?? <String>[]),
+            onSpecialtiesChanged: (specialties) => _updateFilter('specialties', specialties),
+          ),
+          const SizedBox(height: 24),
+
+          // 3. FILTRO DE SERVIÇOS
+          _buildServicesFilter(),
+          const SizedBox(height: 24),
+
+          // 4. FILTRO DE LOCALIZAÇÃO
+          _buildLocationFilter(),
+          const SizedBox(height: 24),
+
+          // 5. FILTRO DE DISPONIBILIDADE
+          AvailabilityFilter(
+            availability: Map<String, dynamic>.from(_localFilters['availability'] ?? {}),
+            onAvailabilityChanged: (availability) => _updateFilter('availability', availability),
           ),
         ],
       ),
     );
   }
+
   Widget _buildServicesFilter() {
     const List<String> services = ['Urgência', 'Domicilio', 'Consulta', 'Telemedicina'];
     
@@ -182,11 +100,12 @@ class _FilterSectionState extends State<FilterSection> {
         const Text(
           'Serviço',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
             color: Color(0xFF6A1B9A),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Wrap(
           spacing: 6,
           runSpacing: 6,
@@ -233,15 +152,17 @@ class _FilterSectionState extends State<FilterSection> {
   Widget _buildLocationFilter() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'Localização',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
             color: Color(0xFF6A1B9A),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         
         // Input de código postal
         TextFormField(
@@ -254,7 +175,7 @@ class _FilterSectionState extends State<FilterSection> {
           ),
           onChanged: (value) => _updateNestedFilter('location', 'postalCode', value),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         
         // Slider de distância
         Column(
@@ -264,7 +185,7 @@ class _FilterSectionState extends State<FilterSection> {
               'Distância: ${_localFilters['location']['distance']} km',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Slider(
               value: (_localFilters['location']['distance'] ?? 25).toDouble(),
               min: 0,
