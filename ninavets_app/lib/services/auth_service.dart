@@ -83,13 +83,14 @@ class AuthService {
     }
   }
 
-  static Future<User?> register(
+  Future<User?> register(
     String email,
     String password,
     String name,
     UserType type,
-    String? phone,
-  ) async {
+    String? phone, {
+    String? licenseNumber, // <- NOVO parâmetro opcional (named)
+  }) async {
     try {
       await Future.delayed(const Duration(milliseconds: 500));
 
@@ -127,26 +128,87 @@ class AuthService {
         createdAt: DateTime.now(),
       );
 
-      // Preparar dados para guardar
+      // --- SE FOR VETERINÁRIO, CRIAR TAMBÉM PERFIL NA BOX DE VETS ---
+      if (type == UserType.veterinarian) {
+        final trimmedLicense = licenseNumber?.trim() ?? '';
+
+        if (trimmedLicense.isEmpty) {
+          throw AuthException(
+            'Por favor, introduza a sua cédula profissional.',
+          );
+        }
+
+        // Só números, mínimo 10
+        final digitsOnly = trimmedLicense.replaceAll(RegExp(r'\D'), '');
+        if (digitsOnly.length < 10) {
+          throw AuthException(
+            'A cédula profissional deve ter pelo menos 10 números.',
+          );
+        }
+        if (!RegExp(r'^\d+$').hasMatch(trimmedLicense)) {
+          throw AuthException(
+            'A cédula profissional deve conter apenas números.',
+          );
+        }
+
+        final Box<Map> vetsBox = await LocalStorageService.veterinariansBox();
+
+        final vetData = <String, dynamic>{
+          'id': user.id,
+          'name': user.name,
+          'licenseNumber': trimmedLicense,
+          'email': user.email,
+          'phone': user.phone ?? '',
+          'photo': null,
+          'bio': '',
+          'species': <String>[],
+          'specialties': <String>[],
+          'services': <String>[],
+          'availability': {
+            'emergency': false,
+            'homeVisit': false,
+            'weekends': false,
+            'businessHours': {'start': '09:00', 'end': '18:00'},
+          },
+          'location': {
+            'address': '',
+            'city': '',
+            'coordinates': {
+              'lat': 0.0,
+              'lng': 0.0,
+            },
+          },
+          'rating': {
+            'average': 0.0,
+            'reviews': 0,
+          },
+          'createdAt': DateTime.now().millisecondsSinceEpoch,
+        };
+
+        await vetsBox.put(user.id, vetData);
+      }
+      // --------------------------------------------------------------
+
+      // Guardar o user + password na box de users
       final Map<String, dynamic> dataToStore = {
         'user': user.toMap(),
         'password': password,
         'created_at': DateTime.now().millisecondsSinceEpoch,
       };
 
-      // Guardar na base de dados
       await usersBox.put(normalizedEmail, dataToStore);
 
       print('User registado com sucesso: ${user.email}');
       return user;
     } on AuthException catch (e) {
       print('AuthException no registo: ${e.message}');
-      rethrow; // Re-lançar a exceção para ser capturada no UI
+      rethrow;
     } catch (e) {
       print('Erro inesperado no registo: $e');
       throw AuthException('Erro ao criar conta. Tente novamente.');
     }
   }
+
 
   // Método auxiliar para verificar se um email já existe
   static Future<bool> emailExists(String email) async {

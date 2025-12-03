@@ -3,6 +3,8 @@ import 'login_screen.dart';
 import '../models/user.dart';
 import 'pet_sitting_screen.dart';
 import 'veterinarians_screen.dart';
+import 'profile_screen.dart';
+
 
 class HomeScreen extends StatelessWidget {
   final User user;
@@ -96,7 +98,36 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+
+            // Botão de Perfil
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfileScreen(user: user),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.person,
+                  color: primaryPurple,
+                ),
+                label: Text(
+                  'Perfil',
+                  style: TextStyle(
+                    color: primaryPurple,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
             
             Text(
               'Serviços Disponíveis',

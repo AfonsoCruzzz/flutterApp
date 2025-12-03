@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -14,15 +14,17 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _authService = AuthService();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final TextEditingController _licenseController = TextEditingController();
 
-  UserType _selectedType = UserType.client;
   bool _isLoading = false;
   String _errorMessage = '';
+  UserType _selectedUserType = UserType.client;
 
   // Cores
   final Color primaryPurple = const Color(0xFF6A1B9A);
@@ -37,6 +39,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
+    _licenseController.dispose();
     super.dispose();
   }
 
@@ -63,12 +66,17 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
-      final user = await AuthService.register(
+      final user = await _authService.register(
         _emailController.text.trim(),
         _passwordController.text,
         _nameController.text.trim(),
-        _selectedType,
-        _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        _selectedUserType,
+        _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
+        licenseNumber: _selectedUserType == UserType.veterinarian
+            ? _licenseController.text.trim()
+            : null,
       );
 
       if (user != null && mounted) {
@@ -212,7 +220,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // Dropdown Tipo de Utilizador
               DropdownButtonFormField<UserType>(
-                value: _selectedType,
+                value: _selectedUserType,
                 decoration: InputDecoration(
                   labelText: 'Tipo de utilizador',
                   labelStyle: TextStyle(color: primaryPurple),
@@ -226,23 +234,56 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   prefixIcon: Icon(Icons.badge, color: primaryPurple),
                 ),
-                items: UserType.values
-                    .map(
-                      (type) => DropdownMenuItem<UserType>(
-                        value: type,
-                        child: Text(_userTypeLabel(type)),
-                      ),
-                    )
-                    .toList(),
+                items: UserType.values.map((type) {
+                  return DropdownMenuItem<UserType>(
+                    value: type,
+                    child: Text(_userTypeLabel(type)),
+                  );
+                }).toList(),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() {
-                      _selectedType = value;
+                      _selectedUserType = value;
                     });
                   }
                 },
               ),
               const SizedBox(height: 16),
+              if (_selectedUserType == UserType.veterinarian) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _licenseController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Cédula profissional',
+                    hintText: 'Ex: 1234567890',
+                  ),
+                  validator: (value) {
+                    if (_selectedUserType != UserType.veterinarian) {
+                      // Para outros tipos de utilizador, não validamos este campo
+                      return null;
+                    }
+
+                    final text = (value ?? '').trim();
+
+                    if (text.isEmpty) {
+                      return 'A cédula profissional é obrigatória para veterinários.';
+                    }
+
+                    // Só números
+                    if (!RegExp(r'^\d+$').hasMatch(text)) {
+                      return 'A cédula profissional deve conter apenas números.';
+                    }
+
+                    // Mínimo 10 números
+                    if (text.length < 10) {
+                      return 'A cédula profissional deve ter pelo menos 10 números.';
+                    }
+
+                    return null;
+                  },
+                ),
+              ],
 
               // Campo Telefone
               TextFormField(

@@ -30,10 +30,11 @@ void main() {
     });
 
     test('registers and logs in after restart', () async {
+      final auth = AuthService();
       const email = 'test@example.com';
       const password = '123456';
 
-      await AuthService.register(
+      await auth.register(
         email,
         password,
         'Tester',
