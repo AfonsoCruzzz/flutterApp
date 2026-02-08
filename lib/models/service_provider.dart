@@ -65,6 +65,55 @@ class ServiceProvider {
     this.schedule, 
   });
 
+  // Método essencial para atualizações instantâneas
+  ServiceProvider copyWith({
+    String? id,
+    String? description,
+    List<String>? serviceTypes,
+    Map<String, double>? prices,
+    String? housingType,
+    bool? hasFencedYard,
+    bool? hasYard,
+    bool? hasOtherPets,
+    List<String>? acceptedPets,
+    List<String>? skills,
+    int? serviceRadiusKm,
+    bool? hasEmergencyTransport,
+    List<String>? gallery,
+    bool? isActive, // <--- O campo que queremos mudar
+    int? yearsExperience,
+    double? ratingAvg,
+    int? ratingCount,
+    String? district,
+    String? municipality,
+    String? address,
+    WorkingSchedule? schedule,
+  }) {
+    return ServiceProvider(
+      id: id ?? this.id,
+      description: description ?? this.description,
+      serviceTypes: serviceTypes ?? this.serviceTypes,
+      prices: prices ?? this.prices,
+      housingType: housingType ?? this.housingType,
+      hasFencedYard: hasFencedYard ?? this.hasFencedYard,
+      hasYard: hasYard ?? this.hasYard,
+      hasOtherPets: hasOtherPets ?? this.hasOtherPets,
+      acceptedPets: acceptedPets ?? this.acceptedPets,
+      skills: skills ?? this.skills,
+      serviceRadiusKm: serviceRadiusKm ?? this.serviceRadiusKm,
+      hasEmergencyTransport: hasEmergencyTransport ?? this.hasEmergencyTransport,
+      gallery: gallery ?? this.gallery,
+      isActive: isActive ?? this.isActive,
+      yearsExperience: yearsExperience ?? this.yearsExperience,
+      ratingAvg: ratingAvg ?? this.ratingAvg,
+      ratingCount: ratingCount ?? this.ratingCount,
+      district: district ?? this.district,
+      municipality: municipality ?? this.municipality,
+      address: address ?? this.address,
+      schedule: schedule ?? this.schedule,
+    );
+  }
+
   factory ServiceProvider.fromMap(Map<String, dynamic> map) {
     
     // 1. Tratamento seguro dos Preços

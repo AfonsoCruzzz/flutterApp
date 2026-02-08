@@ -148,9 +148,9 @@ class _PetSittingFilterSectionState extends State<PetSittingFilterSection> {
         const SizedBox(height: 16),
         Slider(
           value: (_localFilters['maxPrice'] ?? 100.0).toDouble(),
-          min: 20,
+          min: 5,
           max: 200,
-          divisions: 18,
+          divisions: 38,
           label: '\$${_localFilters['maxPrice']?.toStringAsFixed(0)}',
           onChanged: (value) => _updateFilter('maxPrice', value),
         ),

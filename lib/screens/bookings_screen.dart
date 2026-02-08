@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/user_provider.dart';
 import '../models/user.dart';
+import '../screens/booking_detail_screen.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -16,6 +17,9 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
   final _supabase = Supabase.instance.client;
   late TabController _tabController;
   
+  // Variável para controlar a subscrição Realtime
+  RealtimeChannel? _bookingsSubscription;
+
   bool _isLoading = true;
   List<Map<String, dynamic>> _bookings = [];
   bool _isViewAsProvider = false; 
@@ -25,29 +29,54 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     
+    // Configuração inicial
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<UserProvider>().currentUser;
       if (user != null && (user.type == UserType.serviceProvider || user.type == UserType.veterinarian)) {
         setState(() => _isViewAsProvider = true);
       }
-      _fetchBookings();
+      _fetchBookings();     // Carregamento inicial
+      _setupRealtime();     // <--- NOVA FUNÇÃO: Ligar o "rádio"
     });
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    // Desligar o canal quando saímos do ecrã para poupar bateria/dados
+    if (_bookingsSubscription != null) {
+      _supabase.removeChannel(_bookingsSubscription!);
+    }
+    super.dispose();
+  }
+
+  // --- O SEGREDO DO INSTANTÂNEO ---
+  void _setupRealtime() {
+    // Subscrevemos a qualquer alteração na tabela 'bookings'
+    _bookingsSubscription = _supabase.channel('public:bookings')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all, // Insert, Update, Delete
+          schema: 'public',
+          table: 'bookings',
+          callback: (payload) {
+            // Sempre que houver mudança na BD, recarregamos a lista
+            _fetchBookings();
+          },
+        )
+        .subscribe();
+  }
+
   Future<void> _fetchBookings() async {
-    setState(() => _isLoading = true);
+    // Nota: Tiramos o setState(loading) daqui para não piscar o ecrã a cada update em tempo real
+    // Apenas atualizamos a lista silenciosamente se já tivermos dados
+    if (_bookings.isEmpty) setState(() => _isLoading = true);
+    
     final user = context.read<UserProvider>().currentUser;
     if (user == null) return;
 
     try {
       final column = _isViewAsProvider ? 'provider_id' : 'client_id';
 
-      // --- CORREÇÃO AQUI ---
-      // Antes: ... providers!provider_id(...)
-      // Agora: ... provider:profiles!provider_id(...)
-      // Como mudámos a FK para apontar para profiles, temos de fazer o join com profiles.
-      // Usamos 'client:' e 'provider:' como alias para distinguir quem é quem no JSON.
-      
       final response = await _supabase
           .from('bookings')
           .select('''
@@ -58,20 +87,26 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
           .eq(column, user.id)
           .order('created_at', ascending: false);
       
-      setState(() {
-        _bookings = List<Map<String, dynamic>>.from(response);
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _bookings = List<Map<String, dynamic>>.from(response);
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
       print("Erro bookings: $e"); 
-      // Dica: Olha para a consola (Run tab) para ver se o erro desapareceu
     }
   }
 
+  // ... (Resto do código: _updateBookingStatus, _filterByStatus, build, _buildList mantém-se igual)
+  // ... Copia as funções abaixo do teu ficheiro anterior ou do código que enviei na resposta passada
+  
   Future<void> _updateBookingStatus(String bookingId, String newStatus) async {
     try {
       await _supabase.from('bookings').update({'status': newStatus}).eq('id', bookingId);
+      // Não precisamos de chamar _fetchBookings() aqui manualmente
+      // porque o Realtime (_setupRealtime) vai detetar a mudança e atualizar sozinho!
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -80,7 +115,6 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
             backgroundColor: newStatus == 'confirmed' ? Colors.green : Colors.red,
           )
         );
-        _fetchBookings(); 
       }
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Erro ao atualizar.")));
@@ -112,13 +146,24 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
               onPressed: () {
                 setState(() {
                   _isViewAsProvider = !_isViewAsProvider;
+                  // Ao mudar de modo, forçamos o fetch para atualizar a lista
+                  _isLoading = true; 
                   _fetchBookings();
                 });
               },
+              // Lógica visual para saber em que modo estamos
               icon: Icon(_isViewAsProvider ? Icons.work : Icons.person, size: 18),
-              label: Text(_isViewAsProvider ? "Sou Prestador" : "Sou Cliente"),
-              style: TextButton.styleFrom(foregroundColor: primaryPurple),
-            )
+              label: Text(
+                _isViewAsProvider ? "Modo Prestador" : "Modo Cliente",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: primaryPurple,
+                backgroundColor: primaryPurple.withOpacity(0.1), // Destaque visual
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+              ),
+            ),
+          const SizedBox(width: 8),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -145,6 +190,9 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     );
   }
 
+  // --- REUTILIZA O TEU WIDGET _buildList DA RESPOSTA ANTERIOR ---
+  // Apenas certifica-te que usas a versão que tem a correção do 'otherSideProfile'
+  
   Widget _buildList(List<Map<String, dynamic>> items, {bool showActions = false}) {
     if (items.isEmpty) {
       return Center(
@@ -167,8 +215,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
         final status = booking['status'] ?? 'pending';
         final dates = booking['scheduled_dates'] as List?;
         
-        // --- CORREÇÃO NO ACESSO AOS DADOS ---
-        // Se sou provider, quero ver o 'client'. Se sou client, quero ver o 'provider'.
+        // Lógica para decidir quem mostrar
         final otherSideProfile = _isViewAsProvider ? booking['client'] : booking['provider'];
         
         String dateStr = "Sem data";
@@ -189,6 +236,19 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.hardEdge, // Adiciona isto para o efeito de clique respeitar as bordas
+          child: InkWell( // <--- TORNA CLICÁVEL
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BookingDetailScreen(
+                    booking: booking,
+                    isProviderView: _isViewAsProvider,
+                  ),
+                ),
+              );
+            },
           child: Column(
             children: [
               ListTile(
@@ -229,10 +289,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => _updateBookingStatus(booking['id'], 'declined'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                          ),
+                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
                           child: const Text("Recusar"),
                         ),
                       ),
@@ -240,10 +297,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () => _updateBookingStatus(booking['id'], 'confirmed'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                           child: const Text("Aceitar"),
                         ),
                       ),
@@ -252,13 +306,15 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                 ),
             ],
           ),
+          ),
         );
+        
       },
     );
   }
 
+  // --- Helpers de UI (Iguais ao anterior) ---
   String _formatServiceType(String type) => type.replaceAll('_', ' ').toUpperCase(); 
-  
   Color _getStatusColor(String status) {
     switch(status.toLowerCase()) {
       case 'pending': return Colors.orange;
@@ -269,7 +325,6 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
       default: return Colors.grey;
     }
   }
-  
   IconData _getStatusIcon(String status) {
     switch(status.toLowerCase()) {
       case 'pending': return Icons.hourglass_empty;
@@ -279,7 +334,6 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
       default: return Icons.info_outline;
     }
   }
-  
   Widget _buildStatusChip(String status) {
     String label = status;
     switch(status) {

@@ -56,7 +56,7 @@ class VeterinarianCard extends StatelessWidget {
                   height: 60,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
-                    color: const Color(0xFF6A1B9A).withOpacity(0.1),
+                    color: primaryPurple.withOpacity(0.1),
                   ),
                   child: veterinarian.photo != null
                       ? ClipRRect(
@@ -69,7 +69,7 @@ class VeterinarianCard extends StatelessWidget {
                       : Icon(
                           Icons.person,
                           size: 30,
-                          color: const Color(0xFF6A1B9A).withOpacity(0.5),
+                          color: primaryPurple.withOpacity(0.5),
                         ),
                 ),
                 const SizedBox(width: 16),
@@ -101,13 +101,13 @@ class VeterinarianCard extends StatelessWidget {
                           children: veterinarian.species.map((s) => Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6A1B9A).withOpacity(0.1),
+                              color: primaryPurple.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFF6A1B9A).withOpacity(0.3)),
+                              border: Border.all(color: primaryPurple.withOpacity(0.3)),
                             ),
                             child: Text(
                               s, 
-                              style: const TextStyle(fontSize: 10, color: Color(0xFF6A1B9A), fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: 10, color: primaryPurple, fontWeight: FontWeight.w500),
                             ),
                           )).toList(),
                         ),
@@ -121,7 +121,7 @@ class VeterinarianCard extends StatelessWidget {
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFF6B35).withOpacity(0.1),
+                              color: primaryOrange.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -237,7 +237,6 @@ class VeterinarianCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text("~2.5 km", style: TextStyle(color: Colors.grey[400], fontSize: 12)),
               ],
             ),
             
@@ -246,20 +245,11 @@ class VeterinarianCard extends StatelessWidget {
             // Botões de ação
             Row(
               children: [
-                // Botão Ligar
-                _ActionButton(
-                  icon: Icons.phone, 
-                  label: "Ligar", 
-                  color: primaryPurple, 
-                  isOutlined: true,
-                  onTap: onCall
-                ),
-                const SizedBox(width: 8),
                 // Botão Chat
                 _ActionButton(
                   icon: Icons.chat, 
                   label: "Chat", 
-                  color: primaryOrange, 
+                  color: primaryPurple, 
                   isOutlined: true,
                   onTap: onChat
                 ),

@@ -243,21 +243,11 @@ class PetSitterCard extends StatelessWidget {
               // --- BOTÕES DE AÇÃO ---
               Row(
                 children: [
-                  // Ligar
-                  _ActionButton(
-                    icon: Icons.phone, 
-                    label: "Ligar", 
-                    color: primaryPurple, 
-                    isOutlined: true,
-                    onTap: onCall ?? onTap, // Se não houver callback específico, abre o perfil
-                  ),
-                  const SizedBox(width: 8),
-                  
                   // Chat
                   _ActionButton(
                     icon: Icons.chat, 
                     label: "Chat", 
-                    color: primaryOrange, 
+                    color: primaryPurple, 
                     isOutlined: true,
                     onTap: onChat ?? onTap,
                   ),

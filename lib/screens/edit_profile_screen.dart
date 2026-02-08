@@ -56,12 +56,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> with TickerProvid
   String _serviceType = 'clinic';
   List<String> _selectedSpecies = [];
   List<String> _selectedSpecialties = [];
+  List<String> _selectedServicesVet = [];
 
   // --- 3. PRESTADOR (Provider) ---
   final _bioProviderCtrl = TextEditingController();
   final _providerAddressCtrl = TextEditingController();
   final _providerDistrictCtrl = TextEditingController();
   final _providerMunicipalityCtrl = TextEditingController();
+  final _clinicAddressController = TextEditingController();
   
   // Mapa de Serviços Ativos
   final Map<String, bool> _activeProviderServices = {
@@ -132,7 +134,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> with TickerProvid
         _clinicNameCtrl.text = v.clinicName ?? '';
         _serviceType = v.serviceType;
         _selectedSpecies = List.from(v.species);
+        _selectedServicesVet = List.from(v.services);
         _selectedSpecialties = List.from(v.specialties);
+        _clinicAddressController.text = widget.veterinarian!.clinicAddress ?? '';
         // Nota: O schedule já foi tratado acima para evitar conflitos
       }
 
@@ -171,6 +175,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> with TickerProvid
     _bioVetCtrl.dispose(); _clinicNameCtrl.dispose();
     _bioProviderCtrl.dispose();
     _providerAddressCtrl.dispose(); _providerDistrictCtrl.dispose(); _providerMunicipalityCtrl.dispose();
+    _clinicAddressController.dispose();
     for (var c in _priceControllers.values) c.dispose();
     super.dispose();
   }
@@ -211,7 +216,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> with TickerProvid
           'service_type': _serviceType,
           'clinic_name': _serviceType == 'independent' ? null : _clinicNameCtrl.text.trim(),
           'species': _selectedSpecies,
-          'specialties': _selectedSpecialties,
+          'specialties': _selectedSpecialties, 'services': _selectedServicesVet,
+          'clinic_address': _clinicAddressController.text.trim().isEmpty ? null : _clinicAddressController.text.trim(),
           
           // IMPORTANTE: Guardar o horário aqui
           'working_schedule': _schedule.toMap(), // Certifica-te que a coluna existe no Supabase (JSONB)
@@ -322,10 +328,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> with TickerProvid
                 serviceType: _serviceType, 
                 selectedSpecies: _selectedSpecies, 
                 selectedSpecialties: _selectedSpecialties,
+                selectedServices: _selectedServicesVet,
+                clinicAddressController: _clinicAddressController,
                 
                 // Callbacks básicos
                 onServiceTypeChanged: (v) => setState(() => _serviceType = v!),
                 onSpeciesChanged: (l) => setState(() => _selectedSpecies = l),
+                onServicesChanged: (l) => setState(() => _selectedServicesVet = l),
                 onSpecialtiesChanged: (l) => setState(() => _selectedSpecialties = l),
                 
                 // --- AQUI ESTÁ A LIGAÇÃO DO CALENDÁRIO ---

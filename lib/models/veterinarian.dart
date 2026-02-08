@@ -111,6 +111,7 @@ class Veterinarian {
   final bool isVerified;
   final bool isActive;
   final WorkingSchedule? schedule;
+  final String? clinicAddress;
 
 
   Veterinarian({
@@ -139,7 +140,66 @@ class Veterinarian {
     this.doesHomeVisits = false,
     this.isActive = true,
     this.schedule,
+    this.clinicAddress,
   });
+
+  Veterinarian copyWith({
+    String? id,
+    String? name,
+    String? licenseNumber,
+    String? email,
+    String? phone,
+    String? photo,
+    String? bio,
+    List<String>? species,
+    List<String>? specialties,
+    List<String>? services,
+    Availability? availability,
+    Location? location,
+    Rating? rating,
+    DateTime? createdAt,
+    String? district,
+    String? municipality,
+    String? parish,
+    String? serviceType,
+    bool? hasOwnSpace,
+    bool? doesHomeVisits,
+    String? clinicName,
+    String? clinicAddress,
+    bool? isMobile,
+    bool? isVerified,
+    bool? isActive, // <--- O campo que queremos mudar
+    WorkingSchedule? schedule,
+  }) {
+    return Veterinarian(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      licenseNumber: licenseNumber ?? this.licenseNumber,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      photo: photo ?? this.photo,
+      bio: bio ?? this.bio,
+      species: species ?? this.species,
+      specialties: specialties ?? this.specialties,
+      services: services ?? this.services,
+      availability: availability ?? this.availability,
+      location: location ?? this.location,
+      rating: rating ?? this.rating,
+      createdAt: createdAt ?? this.createdAt,
+      district: district ?? this.district,
+      municipality: municipality ?? this.municipality,
+      parish: parish ?? this.parish,
+      serviceType: serviceType ?? this.serviceType,
+      hasOwnSpace: hasOwnSpace ?? this.hasOwnSpace,
+      doesHomeVisits: doesHomeVisits ?? this.doesHomeVisits,
+      clinicName: clinicName ?? this.clinicName,
+      clinicAddress: clinicAddress ?? this.clinicAddress,
+      isMobile: isMobile ?? this.isMobile,
+      isVerified: isVerified ?? this.isVerified,
+      isActive: isActive ?? this.isActive, // <--- Aqui
+      schedule: schedule ?? this.schedule,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -179,6 +239,7 @@ class Veterinarian {
       // Mapeamento dos novos campos
       serviceType: map['service_type'] ?? 'clinic',
       clinicName: map['clinic_name'],
+      clinicAddress: map['clinic_address'],
       hasOwnSpace: map['has_own_space'] ?? false,
       doesHomeVisits: map['does_home_visits'] ?? false,
 

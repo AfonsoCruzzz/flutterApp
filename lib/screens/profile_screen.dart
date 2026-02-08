@@ -5,11 +5,11 @@ import '../models/user.dart';
 import '../models/veterinarian.dart';
 import '../models/service_provider.dart';
 import '../providers/user_provider.dart';
+import '../screens/login_screen.dart';
 
 // Ecrãs e Widgets
 import 'edit_profile_screen.dart';
 // import 'pet_sitting_screen.dart'; // <--- Importa o teu ecrã de pesquisa aqui
-import '../widgets/pet_sitter_card.dart'; // O Cartão que acabámos de editar
 import '../widgets/profile_views/provider_profile_view.dart';
 import '../widgets/profile_views/veterinarian_profile_view.dart'; // A nova view de vet
 
@@ -101,20 +101,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Função para ligar/desligar visibilidade
   Future<void> _toggleProviderStatus(bool value) async {
     if (_provider == null) return;
+
+    // 1. Atualização Visual Imediata (Optimistic Update)
+    setState(() {
+      _provider = _provider!.copyWith(isActive: value);
+    });
+
     try {
+      // 2. Enviar para a BD em background
       await _supabase.from('providers').update({'is_active': value}).eq('id', _user!.id);
-      // Atualiza localmente
-      setState(() {
-         // Recriamos o objeto provider com o novo status (Models devem ser imutáveis idealmente)
-         // Aqui faço um "hack" rápido recarregando tudo, ou podes criar método copyWith
-         _loadProfileData();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(value ? "Está visível para os clientes!" : "O seu perfil está oculto."),
-        backgroundColor: value ? Colors.green : Colors.grey,
-      ));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(value ? "Visível para clientes!" : "Perfil oculto."),
+          backgroundColor: value ? Colors.green : Colors.grey,
+          duration: const Duration(milliseconds: 500),
+        ));
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Erro ao atualizar estado.")));
+      // 3. Reverter em caso de erro
+      setState(() {
+        _provider = _provider!.copyWith(isActive: !value);
+      });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Erro ao atualizar.")));
+    }
+  }
+
+  // Função para ligar/desligar visibilidade do VETERINÁRIO
+  Future<void> _toggleVetStatus(bool value) async {
+    if (_veterinarian == null) return;
+
+    // 1. ATUALIZAÇÃO VISUAL INSTANTÂNEA
+    // Usamos o copyWith para mudar APENAS o isActive. 
+    // O setState força o Flutter a redesenhar o switch imediatamente.
+    setState(() {
+      _veterinarian = _veterinarian!.copyWith(isActive: value);
+    });
+
+    try {
+      // 2. Enviar para a Base de Dados em segundo plano
+      await _supabase.from('veterinarians').update({'is_active': value}).eq('id', _user!.id);
+      
+      // (Opcional) Feedback visual rápido
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(value ? "Visível" : "Oculto"), 
+          duration: const Duration(milliseconds: 500),
+          backgroundColor: value ? Colors.green : Colors.grey,
+        ));
+      }
+    } catch (e) {
+      // 3. Reverter em caso de erro (Voltamos a negar o valor)
+      setState(() {
+        _veterinarian = _veterinarian!.copyWith(isActive: !value);
+      });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Erro de conexão.")));
     }
   }
 
@@ -179,8 +220,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // 3. Agora sim, carregamos os dados frescos
                     await _loadProfileData();
                   }
+                }
+              ),
+            if (widget.isMyProfile)
+              IconButton(
+                icon: Icon(Icons.logout, color: primaryPurple),
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(child: CircularProgressIndicator()),
+                  );
+
+                  try {
+                    context.read<UserProvider>().clearUser();
+                    if (!context.mounted) return;
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (Route<dynamic> route) => false,
+                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erro ao sair: $e")));
+                    }
+                  }
                 },
-              )
+              ),
           ],
         ),
         body: SingleChildScrollView( // Permite scroll em tudo
@@ -188,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               // --- 1. HEADER (Igual) ---
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
               Center(
                 child: CircleAvatar(
                   radius: 50,
@@ -202,9 +268,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (_user!.city != null)
                 Text("${_user!.city}, ${_user!.district}", style: const TextStyle(color: Colors.grey)),
               
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
+
+              if (widget.isMyProfile && hasVetProfile) ...[
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _veterinarian!.isActive ? Colors.purple.shade50 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _veterinarian!.isActive ? const Color(0xFF6A1B9A) : Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_hospital, color: _veterinarian!.isActive ? const Color(0xFF6A1B9A) : Colors.grey),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_veterinarian!.isActive ? "Perfil Ativo" : "Perfil Oculto", 
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(_veterinarian!.isActive ? "Aparece na pesquisa de médicos." : "Ative para receber marcações.",
+                                style: const TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _veterinarian!.isActive, 
+                        activeColor: const Color(0xFF6A1B9A),
+                        onChanged: (val) => _toggleVetStatus(val), // Chama a nova função
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // --- 2. CONTROLO DE PRESTADOR (Só se for o meu perfil e for provider) ---
+              // --- 2. CONTROLO DE PRESTADOR ---
               if (widget.isMyProfile && hasProviderProfile) ...[
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -232,52 +334,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Switch(
                         value: _provider!.isActive, 
                         activeColor: Colors.green,
-                        onChanged: _toggleProviderStatus
+                        onChanged: _toggleProviderStatus // Agora usa a versão rápida
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
                 
-                // --- 3. PRÉ-VISUALIZAÇÃO DO CARTÃO ---
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text("Como os clientes te veem:", style: TextStyle(color: Colors.grey, fontSize: 12))
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: PetSitterCard(
-                    user: _user!,
-                    provider: _provider!,
-                    onTap: () {
-                      // Nada acontece na preview, ou podes abrir os detalhes
-                    },
-                  ),
-                ),
+                // Removi o PetSitterCard e o texto "Como os clientes te veem" aqui.
                 
-                // Botão para ir para o ecrã de serviços (Pesquisa)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                       // Navegar para o ecrã de lista de sitters
-                       // Navigator.push(context, MaterialPageRoute(builder: (_) => const PetSittingScreen()));
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("A abrir lista de serviços...")));
-                    },
-                    icon: const Icon(Icons.search),
-                    label: const Text("Ver todos os Prestadores na minha zona"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primaryPurple,
-                      side: BorderSide(color: primaryPurple),
-                      minimumSize: const Size(double.infinity, 45)
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                
               ],
 
               // --- 4. TABS E DETALHES ---
