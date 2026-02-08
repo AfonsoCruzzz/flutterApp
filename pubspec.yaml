@@ -41,7 +41,7 @@ dependencies:
   geolocator: ^10.1.0     # Para o botão SOS e Check-in
   url_launcher: ^6.2.0    # Para abrir o Google Maps externo (mais fácil que embutido)
   provider: ^6.1.1        # (Ou outro que prefiras) Para gerir o estado do carrinho
-
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,6 +55,7 @@ dev_dependencies:
   path_provider_platform_interface: ^2.0.2
   mockito: ^5.4.4
   build_runner: ^2.4.8
+  
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

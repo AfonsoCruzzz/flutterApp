@@ -1,4 +1,5 @@
 import 'coordinates.dart';
+import 'working_schedule.dart';
 
 // --- Classes Auxiliares mantêm-se, mas com fromMap mais seguro ---
 
@@ -109,6 +110,7 @@ class Veterinarian {
   final bool isMobile;
   final bool isVerified;
   final bool isActive;
+  final WorkingSchedule? schedule;
 
 
   Veterinarian({
@@ -136,6 +138,7 @@ class Veterinarian {
     this.hasOwnSpace = false,
     this.doesHomeVisits = false,
     this.isActive = true,
+    this.schedule,
   });
 
   Map<String, dynamic> toMap() {
@@ -198,6 +201,9 @@ class Veterinarian {
       isActive: map['is_active'] ?? true,
       isMobile: map['is_mobile'] ?? false,
       isVerified: map['is_verified'] ?? false,
+      schedule: map['working_schedule'] != null 
+          ? WorkingSchedule.fromMap(map['working_schedule'])
+          : WorkingSchedule.empty(),
     );
   }
 }

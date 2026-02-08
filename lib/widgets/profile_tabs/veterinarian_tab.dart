@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import '../multi_select_chips.dart'; // Importa o teu widget de chips existente
-import '../../utils/veterinary_data.dart'; // Importa os dados estáticos
+import '../multi_select_chips.dart'; 
+import '../../utils/veterinary_data.dart';
+// NOVOS IMPORTS
+import '../../models/working_schedule.dart';
+import '../weekly_schedule_editor.dart';
+import '../availability_calendar_manager.dart';
 
 class VeterinarianTab extends StatelessWidget {
   final TextEditingController bioController;
@@ -11,7 +15,11 @@ class VeterinarianTab extends StatelessWidget {
   final List<String> selectedSpecies;
   final List<String> selectedSpecialties;
   
-  // Callbacks (Funções para avisar o pai)
+  // --- NOVO: HORÁRIO E CALENDÁRIO ---
+  final WorkingSchedule currentSchedule; 
+  final Function(WorkingSchedule) onScheduleChanged;
+
+  // Callbacks
   final Function(String?) onServiceTypeChanged;
   final Function(List<String>) onSpeciesChanged;
   final Function(List<String>) onSpecialtiesChanged;
@@ -23,6 +31,10 @@ class VeterinarianTab extends StatelessWidget {
     required this.serviceType,
     required this.selectedSpecies,
     required this.selectedSpecialties,
+    // Novos parâmetros
+    required this.currentSchedule,
+    required this.onScheduleChanged,
+    
     required this.onServiceTypeChanged,
     required this.onSpeciesChanged,
     required this.onSpecialtiesChanged,
@@ -38,9 +50,16 @@ class VeterinarianTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. DADOS DA CLÍNICA
+          const Text("Dados Profissionais", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: primaryPurple)),
+          const SizedBox(height: 16),
+          
           DropdownButtonFormField<String>(
             value: serviceType,
-            decoration: InputDecoration(labelText: 'Tipo de Serviço', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+            decoration: InputDecoration(
+              labelText: 'Tipo de Serviço', 
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+            ),
             items: const [
               DropdownMenuItem(value: 'clinic', child: Text('Exclusivo em Clínica')),
               DropdownMenuItem(value: 'independent', child: Text('Independente')),
@@ -61,9 +80,34 @@ class VeterinarianTab extends StatelessWidget {
              ),
           
           const SizedBox(height: 24),
+
+          // 2. GESTÃO DE HORÁRIO (Injetado aqui)
+          // Se for médico de clínica, talvez queiras esconder isto se ele seguir o horário da clínica,
+          // mas assumindo que ele gere a sua agenda na app:
+          
+          // A. Editor Semanal
+          WeeklyScheduleEditor(
+            schedule: currentSchedule,
+            onChanged: onScheduleChanged,
+          ),
+
+          const SizedBox(height: 32),
+
+          // B. Editor de Exceções
+          AvailabilityCalendarManager(
+            schedule: currentSchedule,
+            onChanged: onScheduleChanged,
+          ),
+
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 24),
+
+          // 3. COMPETÊNCIAS TÉCNICAS
           const Text("Espécies que atende", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: primaryPurple)),
+          const SizedBox(height: 8),
           MultiSelectChips(
-            options: VeterinaryData.speciesList,
+            options: VeterinaryData.speciesList, // Certifica-te que tens esta classe ou usa uma lista fixa
             selectedValues: selectedSpecies,
             activeColor: primaryOrange,
             onChanged: onSpeciesChanged,
@@ -71,6 +115,7 @@ class VeterinarianTab extends StatelessWidget {
           
           const SizedBox(height: 24),
           const Text("Especialidades", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: primaryPurple)),
+          const SizedBox(height: 8),
           MultiSelectChips(
              options: VeterinaryData.specialtiesList,
              selectedValues: selectedSpecialties,
@@ -79,6 +124,8 @@ class VeterinarianTab extends StatelessWidget {
           ),
           
           const SizedBox(height: 24),
+
+          // 4. BIO
           TextFormField(
             controller: bioController,
             maxLines: 4,
@@ -86,8 +133,10 @@ class VeterinarianTab extends StatelessWidget {
               labelText: 'Bio Profissional', 
               prefixIcon: const Icon(Icons.description, color: primaryPurple),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              alignLabelWithHint: true,
             ),
           ),
+          const SizedBox(height: 40),
         ],
       ),
     );

@@ -151,11 +151,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           foregroundColor: Colors.black,
           actions: [
             if (widget.isMyProfile)
+              // Dentro do build -> AppBar -> actions
               IconButton(
                 icon: const Icon(Icons.edit, color: Color(0xFF6A1B9A)),
                 onPressed: () async {
-                  // 1. O 'await' é crucial! Ele obriga a esperar que voltes do outro ecrã
-                  await Navigator.push(
+                  // 1. Guardamos o resultado da navegação
+                  final bool? result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => EditProfileScreen(
@@ -165,14 +166,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                   
-                  // 2. Assim que o 'await' termina (tu voltas), esta função corre e atualiza o ecrã
-                  // Se não tiveres isto, ele mostra os dados antigos
-                  _loadProfileData(); 
+                  // 2. Se result for true, significa que o utilizador clicou em "Guardar"
+                  if (result == true) {
+                    setState(() {
+                      // TRUQUE: Anulamos os objetos atuais para forçar o _loadProfileData
+                      // a ir buscar tudo novo à base de dados
+                      _veterinarian = null; 
+                      _provider = null;
+                      _isLoading = true; // Mostra o loading para dar feedback visual
+                    });
+                    
+                    // 3. Agora sim, carregamos os dados frescos
+                    await _loadProfileData();
+                  }
                 },
               )
           ],
         ),
         body: SingleChildScrollView( // Permite scroll em tudo
+        padding: const EdgeInsets.only(bottom: 100),
           child: Column(
             children: [
               // --- 1. HEADER (Igual) ---

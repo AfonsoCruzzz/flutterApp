@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/service_provider.dart';
-import '../multi_select_chips.dart'; // Certifica-te que tens este widget importado
+import '../../models/working_schedule.dart'; // <--- Importante
+import '../multi_select_chips.dart'; 
+import '../weekly_schedule_editor.dart'; 
+import '../availability_calendar_manager.dart';
 
 class ProviderTab extends StatelessWidget {
   final TextEditingController bioController;
@@ -24,6 +27,10 @@ class ProviderTab extends StatelessWidget {
   final List<String> acceptedPets;
   final List<String> skills;
   
+  // --- NOVO: HORÁRIO E CALENDÁRIO ---
+  final WorkingSchedule currentSchedule; // Recebe o horário atual
+  final Function(WorkingSchedule) onScheduleChanged; // Avisa quando muda
+
   // Callbacks
   final Function(String, bool) onServiceChanged;
   final Function(double) onRadiusChanged;
@@ -45,6 +52,10 @@ class ProviderTab extends StatelessWidget {
     required this.hasFencedYard,
     required this.acceptedPets,
     required this.skills,
+    // Novos campos no construtor
+    required this.currentSchedule,
+    required this.onScheduleChanged,
+    
     required this.onServiceChanged,
     required this.onRadiusChanged,
     required this.onTransportChanged,
@@ -57,7 +68,6 @@ class ProviderTab extends StatelessWidget {
     required this.addressController,
     required this.districtController,
     required this.municipalityController,
-
   });
 
   @override
@@ -66,9 +76,9 @@ class ProviderTab extends StatelessWidget {
     const Color primaryOrange = Color(0xFFFF6B35);
 
     // Helper para verificar se alojamento está ativo
-    bool isHosting = activeServices['pet_boarding']! || activeServices['pet_day_care']!;
+    // (Verifica se existe e se é true, para evitar null errors)
+    bool isHosting = (activeServices['pet_boarding'] ?? false) || (activeServices['pet_day_care'] ?? false);
 
-    // Listas de opções estáticas
     final List<String> petTypesOptions = ['Cães', 'Gatos', 'Coelhos', 'Pássaros', 'Répteis', 'Outros'];
     final List<String> skillsOptions = [
       'Administração de Medicamentos Orais',
@@ -86,67 +96,92 @@ class ProviderTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 1. SERVIÇOS E PREÇOS (Expansível) ---
+          // --- 1. SERVIÇOS E PREÇOS ---
           _buildSectionTitle("Serviços & Tarifas", primaryPurple),
           const Text("Selecione os serviços que presta e defina o valor base.", style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
           
-          ...activeServices.keys.map((key) {
-             final isActive = activeServices[key]!;
-             return AnimatedContainer(
-               duration: const Duration(milliseconds: 300),
-               margin: const EdgeInsets.only(bottom: 8),
-               decoration: BoxDecoration(
-                 color: isActive ? primaryOrange.withOpacity(0.05) : Colors.white,
-                 borderRadius: BorderRadius.circular(12),
-                 border: Border.all(color: isActive ? primaryOrange.withOpacity(0.5) : Colors.grey.shade300),
-               ),
-               child: Column(
-                 children: [
-                   CheckboxListTile(
-                     title: Text(ServiceProvider.getServiceLabel(key), style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
-                     value: isActive,
-                     activeColor: primaryOrange,
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                     onChanged: (v) => onServiceChanged(key, v!),
-                   ),
-                   // Campo Expansível de Preço
-                   if (isActive)
-                     Padding(
-                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                       child: Row(
-                         children: [
-                           const Text("Preço base: ", style: TextStyle(fontWeight: FontWeight.w500)),
-                           const SizedBox(width: 10),
-                           SizedBox(
-                             width: 100,
-                             child: TextFormField(
-                               controller: priceControllers[key],
-                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                               decoration: InputDecoration(
-                                 hintText: "0.00",
-                                 suffixText: '€', 
-                                 isDense: true,
-                                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
-                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                 filled: true,
-                                 fillColor: Colors.white,
+          // Gera a lista de checkboxes
+          Column(
+            children: activeServices.keys.map((key) {
+               final isActive = activeServices[key] ?? false;
+               return AnimatedContainer(
+                 duration: const Duration(milliseconds: 300),
+                 margin: const EdgeInsets.only(bottom: 8),
+                 decoration: BoxDecoration(
+                   color: isActive ? primaryOrange.withOpacity(0.05) : Colors.white,
+                   borderRadius: BorderRadius.circular(12),
+                   border: Border.all(color: isActive ? primaryOrange.withOpacity(0.5) : Colors.grey.shade300),
+                 ),
+                 child: Column(
+                   children: [
+                     CheckboxListTile(
+                       title: Text(ServiceProvider.getServiceLabel(key), style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
+                       value: isActive,
+                       activeColor: primaryOrange,
+                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                       onChanged: (v) => onServiceChanged(key, v ?? false),
+                     ),
+                     // Campo Expansível de Preço
+                     if (isActive)
+                       Padding(
+                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                         child: Row(
+                           children: [
+                             const Text("Preço base: ", style: TextStyle(fontWeight: FontWeight.w500)),
+                             const SizedBox(width: 10),
+                             SizedBox(
+                               width: 100,
+                               child: TextFormField(
+                                 controller: priceControllers[key],
+                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                 decoration: InputDecoration(
+                                   hintText: "0.00",
+                                   suffixText: '€', 
+                                   isDense: true,
+                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
+                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                   filled: true,
+                                   fillColor: Colors.white,
+                                 ),
                                ),
                              ),
-                           ),
-                           const SizedBox(width: 8),
-                           Text(key.contains('walking') ? "/ passeio" : "/ dia", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                         ],
-                       ),
-                     )
-                 ],
-               ),
-             );
-          }),
+                             const SizedBox(width: 8),
+                             Text(key.contains('walking') ? "/ passeio" : "/ dia", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                           ],
+                         ),
+                       )
+                   ],
+                 ),
+               );
+            }).toList(),
+          ),
 
           const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
 
-          // --- 2. ANIMAIS ACEITES ---
+          // --- 2. GESTÃO DE HORÁRIO (OS NOVOS WIDGETS) ---
+          
+          // A. Editor Semanal
+          WeeklyScheduleEditor(
+            schedule: currentSchedule, // Passamos o objeto recebido do pai
+            onChanged: onScheduleChanged, // Passamos o callback do pai
+          ),
+
+          const SizedBox(height: 32),
+
+          // B. Editor de Exceções (Calendário)
+          AvailabilityCalendarManager(
+            schedule: currentSchedule,
+            onChanged: onScheduleChanged,
+          ),
+          
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 24),
+
+          // --- 3. ANIMAIS ACEITES ---
           _buildSectionTitle("Que animais aceita?", primaryPurple),
           MultiSelectChips(
             options: petTypesOptions,
@@ -157,7 +192,7 @@ class ProviderTab extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // --- 3. COMPETÊNCIAS / SKILLS ---
+          // --- 4. COMPETÊNCIAS / SKILLS ---
           _buildSectionTitle("As minhas Competências", primaryPurple),
           const Text("Destaque o que sabe fazer bem.", style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 8),
@@ -169,10 +204,9 @@ class ProviderTab extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
-
-          // --- 4. LOGÍSTICA ---
-          _buildSectionTitle("Logística e Deslocação", primaryPurple),
           
+          // --- 5. LOGÍSTICA ---
+          _buildSectionTitle("Logística e Deslocação", primaryPurple),
           Card(
             elevation: 0,
             color: Colors.grey.shade50,
@@ -205,7 +239,7 @@ class ProviderTab extends StatelessWidget {
             ),
           ),
 
-          // --- 5. ALOJAMENTO (Condicional) ---
+          // --- 6. ALOJAMENTO (Condicional) ---
           if (isHosting) ...[
             const SizedBox(height: 30),
             Container(
@@ -229,7 +263,6 @@ class ProviderTab extends StatelessWidget {
                   const Text("Como os clientes se deslocam até si, esta morada é obrigatória.", style: TextStyle(fontSize: 12, color: Colors.grey)),
                   const SizedBox(height: 16),
                   
-                  // NOVOS CAMPOS DE MORADA
                   TextFormField(
                     controller: addressController,
                     decoration: const InputDecoration(labelText: "Morada do Espaço (Rua e Nº)", border: OutlineInputBorder(), filled: true, fillColor: Colors.white),
@@ -255,15 +288,14 @@ class ProviderTab extends StatelessWidget {
                   CheckboxListTile(
                     title: const Text("Espaço Exterior Vedado"),
                     value: hasFencedYard, 
-                    onChanged: (v) => onFenceChanged(v!)
+                    onChanged: (v) => onFenceChanged(v ?? false)
                   ),
                   
-                  // AQUI ESTÁ A OPÇÃO DOS OUTROS ANIMAIS
                   CheckboxListTile(
                     title: const Text("Tenho outros animais no espaço"),
                     subtitle: const Text("Assinale se tiver animais residentes"),
                     value: hasOtherPets,
-                    onChanged: (v) => onOtherPetsChanged(v!),
+                    onChanged: (v) => onOtherPetsChanged(v ?? false),
                   ),
                   if (hasOtherPets)
                     Padding(
@@ -277,7 +309,7 @@ class ProviderTab extends StatelessWidget {
           
           const SizedBox(height: 24),
 
-          // --- 6. BIO ---
+          // --- 7. BIO ---
           _buildSectionTitle("Sobre mim", primaryPurple),
           TextFormField(
             controller: bioController,
@@ -290,7 +322,7 @@ class ProviderTab extends StatelessWidget {
               fillColor: Colors.grey.shade50,
             ),
           ),
-          const SizedBox(height: 40), // Espaço extra no fundo
+          const SizedBox(height: 40),
         ],
       ),
     );

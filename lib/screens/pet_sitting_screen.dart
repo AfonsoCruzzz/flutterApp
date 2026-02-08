@@ -5,6 +5,9 @@ import '../models/service_provider.dart';
 import '../widgets/pet_sitter_card.dart'; // O novo cartão
 import 'profile_screen.dart'; // Para navegar para o perfil
 import './pet_sitting_search_screen.dart'; // O teu ecrã de filtros
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import 'booking_screen.dart';
 
 class PetSittingScreen extends StatefulWidget {
   const PetSittingScreen({super.key});
@@ -218,7 +221,7 @@ class _PetSittingScreenState extends State<PetSittingScreen> {
               : filtered.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 100),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final item = filtered[index];
@@ -237,6 +240,25 @@ class _PetSittingScreenState extends State<PetSittingScreen> {
                                   isMyProfile: false,
                                   userId: u.id,
                                   provider: p, // Passamos o objeto para abrir rápido
+                                ),
+                              ),
+                            );
+                          },
+                          onBook: () {
+    // Obter o utilizador atual (Cliente)
+                            final currentUser = context.read<UserProvider>().currentUser;
+                            
+                            if (currentUser == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Precisa de fazer login.")));
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BookingScreen(
+                                  provider: p,         // O prestador do card
+                                  client: currentUser, // Eu, o cliente
                                 ),
                               ),
                             );

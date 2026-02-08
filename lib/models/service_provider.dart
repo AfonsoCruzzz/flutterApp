@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'working_schedule.dart'; // <--- IMPORTANTE: Importar o modelo do horário
 
 class ServiceProvider {
   final String id;
@@ -9,14 +10,14 @@ class ServiceProvider {
   final Map<String, double> prices; 
   
   // Detalhes do Alojamento
-  final String housingType; // 'Apartamento', 'Moradia', 'Quinta'
+  final String housingType;
   final bool hasFencedYard;
   final bool hasYard;       
   final bool hasOtherPets;  
   
-  // NOVOS CAMPOS
-  final List<String> acceptedPets; // ['Cães', 'Gatos']
-  final List<String> skills;       // ['Primeiros Socorros', 'Treino']
+  // Listas
+  final List<String> acceptedPets;
+  final List<String> skills;
   
   // Logística
   final int serviceRadiusKm;
@@ -31,10 +32,13 @@ class ServiceProvider {
   final double ratingAvg;
   final int ratingCount;
 
-  // Localização (Cache opcional)
+  // Localização
   final String? district;
   final String? municipality;
   final String? address;
+
+  // --- NOVO CAMPO: HORÁRIO ---
+  final WorkingSchedule? schedule; 
 
   ServiceProvider({
     required this.id,
@@ -46,7 +50,7 @@ class ServiceProvider {
     required this.hasYard,
     required this.hasOtherPets,
     required this.acceptedPets,
-    required this.skills, // <--- NOVO
+    required this.skills,
     required this.serviceRadiusKm,
     required this.hasEmergencyTransport,
     required this.gallery,
@@ -57,6 +61,8 @@ class ServiceProvider {
     this.district,
     this.municipality,
     this.address,
+    // Adicionar ao construtor
+    this.schedule, 
   });
 
   factory ServiceProvider.fromMap(Map<String, dynamic> map) {
@@ -73,10 +79,9 @@ class ServiceProvider {
       });
     }
 
-    // 2. Helper para Listas (Postgres Array -> List<String>)
+    // 2. Helper para Listas
     List<String> _parseList(dynamic listData) {
       if (listData == null) return [];
-      // Se vier como String (JSON), faz decode. Se vier como List, converte.
       if (listData is String) {
          try {
            return List<String>.from(jsonDecode(listData));
@@ -91,7 +96,7 @@ class ServiceProvider {
       
       serviceTypes: _parseList(map['service_types']),
       acceptedPets: _parseList(map['accepted_pets']),
-      skills: _parseList(map['skills']), // <--- NOVO
+      skills: _parseList(map['skills']), 
       gallery: _parseList(map['gallery']),
       
       prices: parsedPrices,
@@ -113,6 +118,11 @@ class ServiceProvider {
       district: map['district'], 
       municipality: map['municipality'],
       address: map['address'],
+
+      // --- NOVO: Converter JSONB para Objeto Schedule ---
+      schedule: map['working_schedule'] != null 
+          ? WorkingSchedule.fromMap(map['working_schedule'])
+          : WorkingSchedule.empty(),
     );
   }
 
@@ -127,7 +137,7 @@ class ServiceProvider {
       'has_yard': hasYard,
       'has_other_pets': hasOtherPets,
       'accepted_pets': acceptedPets,
-      'skills': skills, // <--- NOVO
+      'skills': skills,
       'service_radius_km': serviceRadiusKm,
       'has_emergency_transport': hasEmergencyTransport,
       'gallery': gallery,
@@ -138,10 +148,13 @@ class ServiceProvider {
       'district': district,
       'municipality': municipality,
       'address': address,
+      
+      // --- NOVO: Converter Objeto Schedule para JSON ---
+      'working_schedule': schedule?.toMap(),
     };
   }
 
-  // --- HELPERS VISUAIS ---
+  // --- HELPERS VISUAIS MANTÊM-SE IGUAIS ---
   static String getServiceLabel(String key) {
     switch (key) {
       case 'pet_boarding': return 'Hospedagem Familiar';

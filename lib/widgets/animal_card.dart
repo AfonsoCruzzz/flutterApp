@@ -6,10 +6,27 @@ class AnimalCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
 
-  const AnimalCard({super.key, required this.animal, this.onTap, this.onEdit,});
+  const AnimalCard({super.key, required this.animal, this.onTap, this.onEdit});
+
+  // Helper para converter "Cães" -> "Cão" apenas na visualização
+  String _getSingularLabel(String plural) {
+    switch (plural) {
+      case 'Cães': return 'Cão';
+      case 'Gatos': return 'Gato';
+      case 'Aves': return 'Ave';
+      case 'Coelhos': return 'Coelho';
+      case 'Répteis': return 'Réptil';
+      case 'Roedores': return 'Roedor';
+      case 'Exóticos': return 'Exótico';
+      default: return plural; // Se já estiver no singular ou for "Outros", devolve igual
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Usamos o helper aqui
+    final displaySpecies = _getSingularLabel(animal.species);
+
     return Card(
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 16),
@@ -44,12 +61,13 @@ class AnimalCard extends StatelessWidget {
                         color: Color(0xFF6A1B9A)
                       ),
                     ),
+                    // AQUI ESTÁ A MUDANÇA: displaySpecies em vez de animal.species
                     Text(
-                      '${animal.species} • ${animal.breed ?? "Sem raça"}',
+                      '$displaySpecies • ${animal.breed != null && animal.breed!.isNotEmpty ? animal.breed : "Sem raça"}',
                       style: TextStyle(color: Colors.grey[600], fontSize: 13),
                     ),
                     const SizedBox(height: 4),
-                    // Badges (ex: Esterilizado)
+                    // Badges
                     Wrap(
                       spacing: 4,
                       children: [
@@ -64,17 +82,14 @@ class AnimalCard extends StatelessWidget {
               ),
               Column(
                 children: [
-                  // Botão Editar (Só aparece se passarmos a função onEdit)
                   if (onEdit != null)
                     IconButton(
                       icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
-                      onPressed: onEdit, // <--- Chama a função
+                      onPressed: onEdit,
                       tooltip: 'Editar dados',
-                      constraints: const BoxConstraints(), // Remove paddings extra
+                      constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
                     ),
-                  
-                  // Se não houver onEdit, ou mesmo havendo, podemos mostrar a seta
                   if (onEdit == null)
                     const Icon(Icons.chevron_right, color: Colors.grey),
                 ],

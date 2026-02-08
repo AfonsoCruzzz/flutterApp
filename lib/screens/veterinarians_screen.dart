@@ -15,6 +15,7 @@ import '../models/animal.dart';
 import '../models/veterinarian.dart';
 import '../services/veterinarian_service.dart';
 import 'profile_screen.dart';
+import 'vet_booking_screen.dart'; // O ecrã de marcação que criámos antes
 
 class VeterinariansScreen extends StatefulWidget {
   const VeterinariansScreen({super.key});
@@ -197,7 +198,7 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
           child: _filteredVeterinarians.isEmpty
               ? _buildEmptyVetState()
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 100),
                   itemCount: _filteredVeterinarians.length,
                   itemBuilder: (context, index) {
                     final vet = _filteredVeterinarians[index];
@@ -217,7 +218,24 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
                       },
                       onCall: () {}, // Implementar lógica de chamada
                       onChat: () {}, // Implementar lógica de chat
-                      onBook: () {}, // Implementar lógica de booking
+                      onBook: () {
+                        final currentUser = context.read<UserProvider>().currentUser;
+                        if (currentUser == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faça login para marcar.")));
+                          return;
+                        }
+
+                        // 2. Navegar para o ecrã de marcação
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VetBookingScreen(
+                              veterinarian: vet,
+                              client: currentUser,
+                            ),
+                          ),
+                        );
+                      }, // Implementar lógica de booking
                     );
                   },
                 ),
