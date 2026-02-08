@@ -6,6 +6,7 @@ import 'providers/user_provider.dart';
 import 'providers/animal_provider.dart';
 import 'providers/booking_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 
 Future<void> main() async {
@@ -18,6 +19,7 @@ Future<void> main() async {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnaWxrZWF3bnlza2tkbGZ1d256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTgzOTIsImV4cCI6MjA4NTM5NDM5Mn0.178gRzvrglQ4zxigPhJqB8vifL73gCo9Cf0rVhjG5JI',
   );
   await initializeDateFormatting('pt_PT', null);
+  timeago.setLocaleMessages('pt', timeago.PtBrMessages());
   runApp(
     MultiProvider(
       providers: [

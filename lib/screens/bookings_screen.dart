@@ -24,7 +24,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    // Verificar se o user é provider por defeito para definir a view inicial
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<UserProvider>().currentUser;
       if (user != null && (user.type == UserType.serviceProvider || user.type == UserType.veterinarian)) {
@@ -40,13 +40,21 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     if (user == null) return;
 
     try {
-      // Se estou a ver como prestador, filtro onde EU sou o provider_id
       final column = _isViewAsProvider ? 'provider_id' : 'client_id';
 
-      // Join: Se sou provider, quero ver quem é o cliente. Se sou cliente, quero ver quem é o provider.
+      // --- CORREÇÃO AQUI ---
+      // Antes: ... providers!provider_id(...)
+      // Agora: ... provider:profiles!provider_id(...)
+      // Como mudámos a FK para apontar para profiles, temos de fazer o join com profiles.
+      // Usamos 'client:' e 'provider:' como alias para distinguir quem é quem no JSON.
+      
       final response = await _supabase
           .from('bookings')
-          .select('*, profiles!client_id(full_name, photo), providers!provider_id(description, id)') 
+          .select('''
+            *, 
+            client:profiles!client_id(full_name, photo), 
+            provider:profiles!provider_id(full_name, photo)
+          ''') 
           .eq(column, user.id)
           .order('created_at', ascending: false);
       
@@ -56,11 +64,11 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
       });
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
-      print("Erro bookings: $e");
+      print("Erro bookings: $e"); 
+      // Dica: Olha para a consola (Run tab) para ver se o erro desapareceu
     }
   }
 
-  // --- NOVA FUNÇÃO: ATUALIZAR ESTADO ---
   Future<void> _updateBookingStatus(String bookingId, String newStatus) async {
     try {
       await _supabase.from('bookings').update({'status': newStatus}).eq('id', bookingId);
@@ -72,7 +80,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
             backgroundColor: newStatus == 'confirmed' ? Colors.green : Colors.red,
           )
         );
-        _fetchBookings(); // Recarregar a lista
+        _fetchBookings(); 
       }
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Erro ao atualizar.")));
@@ -108,7 +116,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                 });
               },
               icon: Icon(_isViewAsProvider ? Icons.work : Icons.person, size: 18),
-              label: Text(_isViewAsProvider ? "Modo Prestador" : "Modo Cliente"),
+              label: Text(_isViewAsProvider ? "Sou Prestador" : "Sou Cliente"),
               style: TextButton.styleFrom(foregroundColor: primaryPurple),
             )
         ],
@@ -119,7 +127,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
           indicatorColor: primaryPurple,
           tabs: const [
             Tab(text: "Pendentes"),
-            Tab(text: "Aceites/Em Curso"),
+            Tab(text: "Aceites"),
             Tab(text: "Histórico"),
           ],
         ),
@@ -129,13 +137,8 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
         : TabBarView(
             controller: _tabController,
             children: [
-              // 1. Pendentes (Aqui é que aparecem os botões de Aceitar/Recusar)
               _buildList(_filterByStatus(['pending']), showActions: true),
-              
-              // 2. Aceites e Em Curso
               _buildList(_filterByStatus(['confirmed', 'in_progress'])),
-              
-              // 3. Histórico
               _buildList(_filterByStatus(['completed', 'cancelled', 'declined'])),
             ],
           ),
@@ -163,26 +166,23 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
         final booking = items[index];
         final status = booking['status'] ?? 'pending';
         final dates = booking['scheduled_dates'] as List?;
-        final clientProfile = booking['profiles']; // Info do cliente (se sou provider)
         
-        // Formatar Data
+        // --- CORREÇÃO NO ACESSO AOS DADOS ---
+        // Se sou provider, quero ver o 'client'. Se sou client, quero ver o 'provider'.
+        final otherSideProfile = _isViewAsProvider ? booking['client'] : booking['provider'];
+        
         String dateStr = "Sem data";
         if (dates != null && dates.isNotEmpty) {
            dateStr = DateFormat('dd MMM', 'pt_PT').format(DateTime.parse(dates[0].toString()));
            if (dates.length > 1) dateStr += " (+${dates.length - 1} dias)";
         }
         
-        // Nome a mostrar (Se sou provider, mostro nome do cliente)
-        String displayName = "Serviço";
+        String displayName = "Utilizador";
         String? photoUrl;
         
-        if (_isViewAsProvider && clientProfile != null) {
-          displayName = clientProfile['full_name'] ?? 'Cliente';
-          photoUrl = clientProfile['photo'];
-        } else {
-          // Se sou cliente, devia mostrar o nome do provider (requer join diferente ou extra logic)
-          // Simplificação: Mostrar tipo de serviço
-          displayName = _formatServiceType(booking['service_type']);
+        if (otherSideProfile != null) {
+          displayName = otherSideProfile['full_name'] ?? 'Utilizador';
+          photoUrl = otherSideProfile['photo'];
         }
 
         return Card(
@@ -214,18 +214,13 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                         Text(dateStr, style: const TextStyle(fontSize: 13)),
                       ],
                     ),
-                    if (booking['total_price'] != null && booking['total_price'] > 0)
+                    if (booking['total_price'] != null && (booking['total_price'] as num) > 0)
                       Text("${booking['total_price']}€", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
                   ],
                 ),
                 trailing: _buildStatusChip(status),
               ),
               
-              // --- ZONA DE AÇÕES (ACEITAR / RECUSAR) ---
-              // Só mostramos se:
-              // 1. Estivermos no modo Provider
-              // 2. O estado for Pending
-              // 3. A flag showActions for true
               if (showActions && _isViewAsProvider && status == 'pending')
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -262,8 +257,8 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     );
   }
 
-  // --- HELPERS (Iguais) ---
   String _formatServiceType(String type) => type.replaceAll('_', ' ').toUpperCase(); 
+  
   Color _getStatusColor(String status) {
     switch(status.toLowerCase()) {
       case 'pending': return Colors.orange;
@@ -274,6 +269,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
       default: return Colors.grey;
     }
   }
+  
   IconData _getStatusIcon(String status) {
     switch(status.toLowerCase()) {
       case 'pending': return Icons.hourglass_empty;
@@ -283,6 +279,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
       default: return Icons.info_outline;
     }
   }
+  
   Widget _buildStatusChip(String status) {
     String label = status;
     switch(status) {

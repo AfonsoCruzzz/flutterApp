@@ -16,6 +16,7 @@ import '../models/veterinarian.dart';
 import '../services/veterinarian_service.dart';
 import 'profile_screen.dart';
 import 'vet_booking_screen.dart'; // O ecrã de marcação que criámos antes
+import '../utils/chat_utils.dart'; // Utilitário para abrir chat
 
 class VeterinariansScreen extends StatefulWidget {
   const VeterinariansScreen({super.key});
@@ -217,7 +218,14 @@ class _VeterinariansScreenState extends State<VeterinariansScreen> with SingleTi
                         );
                       },
                       onCall: () {}, // Implementar lógica de chamada
-                      onChat: () {}, // Implementar lógica de chat
+                      onChat: () {
+                        ChatUtils.openChat(
+                          context, 
+                          targetUserId: vet.id, 
+                          targetUserName: vet.name,
+                          targetUserPhoto: vet.photo
+                        );
+                      }, // Implementar lógica de chat
                       onBook: () {
                         final currentUser = context.read<UserProvider>().currentUser;
                         if (currentUser == null) {

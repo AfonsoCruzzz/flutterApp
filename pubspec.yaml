@@ -41,6 +41,7 @@ dependencies:
   geolocator: ^10.1.0     # Para o botão SOS e Check-in
   url_launcher: ^6.2.0    # Para abrir o Google Maps externo (mais fácil que embutido)
   provider: ^6.1.1        # (Ou outro que prefiras) Para gerir o estado do carrinho
+  timeago: ^3.6.1
   
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class DaySchedule {
   final bool isOpen;
   final String start;
