@@ -56,7 +56,16 @@ dev_dependencies:
   path_provider_platform_interface: ^2.0.2
   mockito: ^5.4.4
   build_runner: ^2.4.8
+  flutter_launcher_icons: ^0.13.1
   
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/paw.png"
+  min_sdk_android: 21 # Importante para apps modernas
+  # Opcional: Cor de fundo para ícones redondos no Android (Usei o teu Roxo)
+  adaptive_icon_background: "#6A1B9A" 
+  adaptive_icon_foreground: "assets/paw.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
