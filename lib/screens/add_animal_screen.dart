@@ -259,6 +259,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              isExpanded: true,
                               value: _species, // O valor selecionado é "Cães"
                               decoration: _inputDecoration('Espécie', Icons.category),
                               // A lista mostra "Cão" mas guarda "Cães"

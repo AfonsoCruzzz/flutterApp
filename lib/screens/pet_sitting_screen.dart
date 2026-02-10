@@ -8,6 +8,7 @@ import './pet_sitting_search_screen.dart'; // O teu ecrã de filtros
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'booking_screen.dart';
+import 'chat_screen.dart';
 
 class PetSittingScreen extends StatefulWidget {
   const PetSittingScreen({super.key});
@@ -244,6 +245,7 @@ class _PetSittingScreenState extends State<PetSittingScreen> {
                               ),
                             );
                           },
+                          onChat: () => _openChat(u),
                           onBook: () {
     // Obter o utilizador atual (Cliente)
                             final currentUser = context.read<UserProvider>().currentUser;
@@ -272,6 +274,64 @@ class _PetSittingScreenState extends State<PetSittingScreen> {
       // BottomNavigationBar REMOVIDA
     );
   }
+
+  Future<void> _openChat(User targetUser) async {
+  final currentUser = context.read<UserProvider>().currentUser;
+  
+  if (currentUser == null) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faça login para enviar mensagens.")));
+    return;
+  }
+
+  try {
+    final myId = currentUser.id;
+    final otherId = targetUser.id;
+
+    // 1. Procura se já existe conversa
+    // CORREÇÃO AQUI: Mudámos de user1_id/user2_id para user_a/user_b
+    final data = await _supabase
+        .from('conversations')
+        .select()
+        .or('and(user_a.eq.$myId,user_b.eq.$otherId),and(user_a.eq.$otherId,user_b.eq.$myId)')
+        .maybeSingle();
+
+    String conversationId;
+
+    if (data != null) {
+      // Já existe
+      conversationId = data['id'];
+    } else {
+      // Não existe, criar nova
+      // CORREÇÃO AQUI TAMBÉM: Ao inserir, usar user_a e user_b
+      final newConv = await _supabase.from('conversations').insert({
+        'user_a': myId,
+        'user_b': otherId,
+        'updated_at': DateTime.now().toIso8601String(),
+        // Podes adicionar 'last_message': '' se a tua tabela tiver essa coluna e for obrigatória
+      }).select().single();
+      
+      conversationId = newConv['id'];
+    }
+
+    // 2. Abrir o ChatScreen
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            conversationId: conversationId,
+            otherUserId: targetUser.id,
+            otherUserName: targetUser.name,
+            otherUserPhoto: targetUser.photo,
+          ),
+        ),
+      );
+    }
+  } catch (e) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erro ao abrir chat: $e")));
+  }
+}
+
 
   // --- HELPERS ---
 

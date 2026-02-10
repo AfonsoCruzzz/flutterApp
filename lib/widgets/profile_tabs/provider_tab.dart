@@ -256,7 +256,16 @@ class ProviderTab extends StatelessWidget {
                     children: [
                       Icon(Icons.home_work, color: primaryPurple),
                       const SizedBox(width: 8),
-                      Text("Localização do Espaço (Hotel/Casa)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryPurple)),
+                      Expanded( // <--- Adiciona este Expanded
+                        child: Text(
+                          "Localização do Espaço (Hotel/Casa)",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 16, 
+                            color: primaryPurple
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(),

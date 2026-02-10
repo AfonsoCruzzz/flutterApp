@@ -68,7 +68,7 @@ class ProviderProfileView extends StatelessWidget {
                   icon: Icons.map,
                   title: "Raio de Ação",
                   value: "${provider.serviceRadiusKm} km",
-                  color: Colors.blue,
+                  color: primaryOrange,
                 ),
               ),
               const SizedBox(width: 12),
@@ -112,7 +112,7 @@ class ProviderProfileView extends StatelessWidget {
              _buildSectionTitle("Animais Aceites", primaryPurple),
              Wrap(
                spacing: 8, runSpacing: 8,
-               children: provider.acceptedPets.map((pet) => _buildChip(pet, Colors.green)).toList(),
+               children: provider.acceptedPets.map((pet) => _buildChip(pet, primaryOrange)).toList(),
              ),
              const SizedBox(height: 24),
           ],
